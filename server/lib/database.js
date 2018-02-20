@@ -1,3 +1,5 @@
+'use strict';
+
 const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 // const logging
@@ -20,9 +22,15 @@ module.exports = class Database {
 		this.client.close();
 	}
 
+	// conveniance
+	collection(name)
+	{
+		return this.db.collection(name);
+	}
+
 	getProfiles(query)
 	{
-		const collection = this.db.collection('profiles');
+		const collection = this.collection('profiles');
 
 		return collection.find(query).toArray()/*.then((documents) => {
 			return documents;
@@ -31,8 +39,15 @@ module.exports = class Database {
 
 	addProfile(profile)
 	{
-		const collection = this.db.collection('profiles');
+		const collection = this.collection('profiles');
 
 		return collection.insert(profile);
+	}
+
+	updateProfile(profile)
+	{
+		const collection = this.collection('profiles');
+
+		return collection.updateOne({ _id: profile._id }, { $set: profile });
 	}
 }
