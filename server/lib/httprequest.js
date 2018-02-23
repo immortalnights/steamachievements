@@ -36,7 +36,7 @@ module.exports = function(options, responseDataKey) {
 							}
 							else
 							{
-								debug("Completed with error; error response");
+								debug("Completed with error; error response", this.statusCode);
 								reject(responseJSON[responseDataKey]);
 							}
 						}

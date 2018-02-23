@@ -21,6 +21,8 @@ module.exports = class Steam {
 
 	getSummary(userId)
 	{
+		console.assert(userId, "Missing user Id");
+
 		debug("Get summary for", userId);
 		return request('ISteamUser/GetPlayerSummaries/v0002/', {
 			key: this.privateKey,
@@ -32,6 +34,8 @@ module.exports = class Steam {
 
 	getOwnedGames(userId)
 	{
+		console.assert(userId, "Missing user Id");
+
 		debug("Get games owned for", userId);
 		return request('IPlayerService/GetOwnedGames/v0001/', {
 			key: this.privateKey,
@@ -43,32 +47,48 @@ module.exports = class Steam {
 	}
 
 	// Get player achievements for a specific game
-	getPlayerAchievementsForGame(userId, game)
+	getPlayerAchievementsForGame(userId, appid)
 	{
-		debug("Get user achievements for game", game.appid);
+		console.assert(userId, "Missing user Id");
+		console.assert(appid, "Missing game Id");
 
+		debug("Get user achievements for game", appid, userId);
 		return request('ISteamUserStats/GetPlayerAchievements/v0001', {
 			key: this.privateKey,
 			steamid: userId,
-			appid: game.appid,
-		}, 'playerstats').then(function(response) {
-
-			let result = _.clone(game);
-
-			// Sometimes the game schema doesn't include the game name and this endpoint does.
-			if (!result.gameName || result.gameName.startsWith('ValveTestApp'))
-			{
-				if (response.gameName)
-				{
-					result.gameName = response.gameName;
-				}
-			}
-
-			result.achievements = _.isUndefined(response.achievements) ? false : response.achievements;
-
-			return result;
-		});
+			appid: appid,
+		}, 'playerstats').then(function(response) { return response.achievements; });
 	}
+
+	// // Get player achievements for a specific game
+	// getPlayerAchievementsForGame(userId, game)
+	// {
+	// 	console.assert(userId, "Missing user Id");
+	// 	console.assert(game, "Missing game Id");
+
+	// 	debug("Get user achievements for game", game.appid, userId);
+	// 	return request('ISteamUserStats/GetPlayerAchievements/v0001', {
+	// 		key: this.privateKey,
+	// 		steamid: userId,
+	// 		appid: game.appid,
+	// 	}, 'playerstats').then(function(response) {
+
+	// 		let result = _.clone(game);
+
+	// 		// Sometimes the game schema doesn't include the game name and this endpoint does.
+	// 		if (!result.gameName || result.gameName.startsWith('ValveTestApp'))
+	// 		{
+	// 			if (response.gameName)
+	// 			{
+	// 				result.gameName = response.gameName;
+	// 			}
+	// 		}
+
+	// 		result.achievements = _.isUndefined(response.achievements) ? false : response.achievements;
+
+	// 		return result;
+	// 	});
+	// }
 
 	/**
 	 * game: {
@@ -89,6 +109,8 @@ module.exports = class Steam {
 	 */
 	getSchemaForGame(game)
 	{
+		console.assert(game, "Missing game Id");
+
 		debug("Get schema for game", game.appid);
 		return request('ISteamUserStats/GetSchemaForGame/v2', {
 			key: this.privateKey,
@@ -107,8 +129,9 @@ module.exports = class Steam {
 
 	getGlobalAchievementPercentagesForGame(game)
 	{
-		debug("Get global achievement percentages for game", game.appid);
+		console.assert(game, "Missing game Id");
 
+		debug("Get global achievement percentages for game", game.appid);
 		return request('ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002', {
 			gameid: game.appid
 		}, 'achievementpercentages').then(function(response) {

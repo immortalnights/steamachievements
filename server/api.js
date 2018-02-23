@@ -8,13 +8,13 @@ const router = express.Router();
 
 app.use(express.json());
 
-const db = new Database();
+const db = new Database('achievementhunter');
 
 process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 
-db.connect('mongodb://localhost:27017', 'achievementhunter')
+db.connect('mongodb://localhost:27017')
 .then(() => {
 	// app.get('/', (req, res) => res.send('OK'));
 
@@ -43,8 +43,8 @@ db.connect('mongodb://localhost:27017', 'achievementhunter')
 					// TODO resolve fancy steam URL
 					let profile = {
 						_id: data.id,
-						games: 'pending',
-						achievements: 'pending'
+						added: new Date(),
+						updated: new Date(0)
 					};
 
 					console.log("add profile")
