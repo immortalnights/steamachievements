@@ -107,54 +107,24 @@ module.exports = class Steam {
 	 * 	}
 	 * }
 	 */
-	getSchemaForGame(game)
+	getSchemaForGame(appid)
 	{
-		console.assert(game, "Missing game Id");
+		console.assert(appid, "Missing game Id");
 
-		debug("Get schema for game", game.appid);
+		debug("Get schema for game", appid);
 		return request('ISteamUserStats/GetSchemaForGame/v2', {
 			key: this.privateKey,
-			appid: game.appid
-		}, 'game').then(function(response) {
-
-			// Extend the basic game data with the full schema, apply 'achievements' to the game object directly
-			_.extend(game, _.omit(response, 'availableGameStats'));
-			_.extend(game, response.availableGameStats);
-
-			return game;
-		}, function(err) {
-			debug("Failed to get schema for game", game.appid, err);
-		});
+			appid: appid
+		}, 'game');
 	}
 
-	getGlobalAchievementPercentagesForGame(game)
+	getGlobalAchievementPercentagesForGame(appid)
 	{
-		console.assert(game, "Missing game Id");
+		console.assert(appid, "Missing game Id");
 
-		debug("Get global achievement percentages for game", game.appid);
+		debug("Get global achievement percentages for game", appid);
 		return request('ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002', {
-			gameid: game.appid
-		}, 'achievementpercentages').then(function(response) {
-			// Iterate game achievements and apply global states
-			_.each(game.achievements, function(achievement) {
-				// Find the achievement in the global states
-				let globalAchievement = _.find(response.achievements, function(responseAchievement) {
-					return responseAchievement.name === achievement.name;
-				});
-
-				if (globalAchievement)
-				{
-					achievement.globalCompletionPercentage = globalAchievement.percent;
-				}
-				else
-				{
-					debug("Failed to find '%s' in global achievements for game %s", achievement.name, game.appid);
-				}
-			});
-
-			return game;
-		}, function() {
-			debug("Failed to get global achievement percentages for game %s", game.appid);
-		});
+			gameid: appid
+		}, 'achievementpercentages').then(function(response) { return response.achievements; });
 	}
 };

@@ -25,7 +25,7 @@ module.exports = function(steam, db) {
 			}
 		},
 
-		getGames(playerId, queue)
+		getPlayerGames(playerId, queue)
 		{
 			const self = this;
 			return function(cb) {
@@ -53,8 +53,6 @@ module.exports = function(steam, db) {
 
 						// games which should be saved to the db
 						let saveGames = [];
-						// games in which player achievement data is required
-						let requiredGames = [];
 
 						// iterate owned games to identify new or played games
 						_.each(ownedGames, function(ownedGame) {
@@ -63,17 +61,15 @@ module.exports = function(steam, db) {
 							if (!storedGame)
 							{
 								saveGames.push(ownedGame);
-								// Request player achievements for this game
-								requiredGames.push(ownedGame.appid);
 							}
 							// Check if the game has been played
 							else if (storedGame.playtime_forever !== ownedGame.playtime_forever)
 							{
-								// Request player achievements for this game
-								requiredGames.push(ownedGames.appid);
-
 								// If the game has been played more or less than the last recorded time, record the new time
 								db.updateGamePlaytime(storedGame._id, ownedGame.playtime_forever, ownedGame.playtime_2weeks);
+
+								// Update player achievements for this game
+								queue.push(self.getPlayerAchievements(playerId, ownedGame.appid, storedGame._id));
 							}
 						});
 
@@ -81,7 +77,7 @@ module.exports = function(steam, db) {
 
 						if (!_.isEmpty(saveGames))
 						{
-							db.addGames(playerId, saveGames)
+							db.addPlayerGames(playerId, saveGames)
 							.catch(function(err) {
 								console.error(err);
 
@@ -92,12 +88,6 @@ module.exports = function(steam, db) {
 								}
 							});
 						}
-
-						// FIXME rather then requesting the games now, let the db poll handle it.
-						// Add games for which achievcements are required to the queue
-						// _.each(requiredGames, function(requiredGame) {
-						// 	queue.push(self.getAchievements(playerId, requiredGame.appid, steam, db))
-						// });
 
 						return db.updateProfile(playerId, {
 							updated: new Date()
@@ -118,34 +108,107 @@ module.exports = function(steam, db) {
 			}
 		},
 
-		getAchievements(recordId, appid, playerId)
+		getPlayerAchievements(playerId, appid, recordId)
 		{
-			return function(cb) {
-				steam.getPlayerAchievementsForGame(playerId, appid)
-				.then(function(achievements) {
+			return function() {
+				return new Promise(function(resolve, reject) {
+					steam.getPlayerAchievementsForGame(playerId, appid)
+					.then(function(achievements) {
 
-					if (achievements)
-					{
-						db.updateGameAchievements(recordId, achievements);
-					}
-					else
-					{
-						// If a game doesn't define any achievements, don't automatically request the game achievements again
-						db.updateGameAchievements(recordId, false);
-					}
+						if (achievements)
+						{
+							db.updateGameAchievements(recordId, achievements);
+						}
+						else
+						{
+							// If a game doesn't define any achievements, don't automatically request the game achievements again
+							db.updateGameAchievements(recordId, false);
+						}
 
-					cb();
-				})
-				.catch(function(err,) {
-					console.error("Failed to get achievements for game", appid, err);
+						resolve();
+					})
+					.catch(function(err) {
+						console.error("Failed to get achievements for game", appid, err);
 
-					// On failure, assume the game has no achievements and never (automatically) ask again
-					if (!err.success)
-					{
-						db.updateGameAchievements(recordId, false);
-					}
+						// On failure, assume the game has no achievements and never (automatically) ask again
+						if (!err.success)
+						{
+							db.updateGameAchievements(recordId, false);
+							// A game without achievements isn't a failure case
+							resolve();
+						}
+						else
+						{
+							reject(err);
+						}
+					});
+				});
+			}
+		},
 
-					cb(err);
+		getGameSchema(game)
+		{
+			const self = this;
+			return function() {
+				return new Promise(function(resolve, reject) {
+					let defaultSchema = {
+						_id: game.appid,
+						updated: new Date()
+					};
+
+					// ensure the schema is complete
+					_.defaults(defaultSchema, _.pick(game, 'name', 'img_icon_url', 'img_logo_url'));
+
+					steam.getSchemaForGame(game.appid)
+					.then(function(schema) {
+
+						// ensure consistency
+						schema.name = schema.gameName;
+						delete schema.gameName;
+
+						// remove unnecessary depth
+						_.extend(schema, schema.availableGameStats);
+						delete schema.availableGameStats;
+
+						// apply the default schema
+						_.defaults(schema, defaultSchema);
+
+						if (!_.isEmpty(schema.achievements))
+						{
+							steam.getGlobalAchievementPercentagesForGame(game.appid)
+							.then(function(achievements) {
+								// console.log("achievements", achievements);
+
+								// iterate over the achievements and apply the global percentage to the game achievements
+								_.each(achievements, function(achievement) {
+									let schemaAchievement = _.find(schema.achievements, { name: achievement.name });
+
+									if (!schemaAchievement)
+									{
+										console.warn("failed to find achievement", achievement.name, "in schema", achievement);
+									}
+									else
+									{
+										schemaAchievement.percent = achievement.percent;
+									}
+								});
+
+								resolve(schema);
+							});
+						}
+						else
+						{
+							schema.achievements = false;
+							resolve(schema);
+							console.log("game %s (%s) has no achievements", schema.name, schema._id);
+						}
+					})
+					.catch(function(err) {
+						console.error("failed to get schema for game %s (%s)", game.name, game.appid);
+						resolve(defaultSchema);
+					});
+				}).then(function(schema) {
+					db.addGames(schema);
 				});
 			}
 		}

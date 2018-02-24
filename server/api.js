@@ -36,7 +36,7 @@ db.connect('mongodb://localhost:27017')
 			console.log("post profile", data);
 
 			db.getProfiles({ _id: data.id }).then((records) => {
-				console.log("Got profile?", records.length, records.length === 0);
+				console.log("Got profile?", records.length === 1);
 				if (records.length === 0)
 				{
 					// assumes the user Id is profiles

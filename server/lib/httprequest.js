@@ -42,7 +42,7 @@ module.exports = function(options, responseDataKey) {
 						}
 						else
 						{
-							debug("Completed with error; invalid responseDataKey", responseJSON.keys());
+							debug("Completed with error; invalid responseDataKey", Object.keys(responseJSON));
 							reject({ error: "Response does not contain object '" + responseDataKey + "'" });
 						}
 					}

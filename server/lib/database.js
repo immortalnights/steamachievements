@@ -82,7 +82,7 @@ module.exports = class Database {
 		return collection.find(query, fields, options).toArray();
 	}
 
-	addGames(playerId, games)
+	addPlayerGames(playerId, games)
 	{
 		const properties = {
 			playerId: playerId,
@@ -138,5 +138,36 @@ module.exports = class Database {
 				updated: new Date()
 			},
 		});
+	}
+
+	getPlayerGamesWithoutSchema()
+	{
+		// db.games.aggregate([{ $lookup: { from: 'player_games', localField: '_id', foreignField: 'appid', as: 'player_docs' }}])
+		// db.player_games.aggregate([{ $lookup: { from: 'games', localField: 'appid', foreignField: '_id', as: 'player_docs' }}])
+
+		const collection = this.collection('player_games');
+
+		return collection.aggregate([ {
+			$lookup: {
+				from: 'games',
+				localField: 'appid',
+				foreignField: '_id',
+				as: 'schema' }
+			}, {
+				$match: { schema: { $eq: [] } }
+			} ]).toArray();
+
+	}
+
+	getGames()
+	{
+
+	}
+
+	addGames(games)
+	{
+		const collection = this.collection('games');
+
+		return collection.insert(games);
 	}
 }
