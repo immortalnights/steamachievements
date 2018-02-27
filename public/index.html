@@ -1,39 +1,44 @@
+<!DOCTYPE html>
 <html>
 	<head>
-		<script src="/node_modules/jquery/dist/jquery.min.js" type="text/javascript"></script>
-		<script type="text/javascript">
-			// window.addEventListener('load', function() {
-			// 	console.log("Loaded");
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-			// 	var form = document.getElementsByTagName('form')[0];
-			// 	form.addEventListener('submit', function(event) {
-			// 		event.preventDefault();
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<link type="text/css" rel="stylesheet" href="/node_modules/materialize-css/dist/css/materialize.min.css"  media="screen,projection"/>
+		<link type="text/css" rel="stylesheet" href="/stylesheets/main.css"  media="screen,projection"/>
 
-
-			// 	});
-			// })
-			$( document ).ready(function() {
-				console.log( "document loaded" );
-				$('form').on('submit', function(event) {
-					event.preventDefault();
-
-					var rawData = $(event.target).serializeArray();
-					// console.log(rawData);
-
-					$.ajax('/app/profiles', {
-						method: 'post',
-						data: JSON.stringify({ id: rawData[0].value }),
-						contentType: 'application/json'
-					});
-
-				})
-			});
-		</script>
+		<script data-main="application/main" src="/node_modules/requirejs/require.js"></script>
+		<script type="text/javascript" src="/node_modules/materialize-css/dist/js/materialize.js"></script>
 	</head>
 	<body>
-		<form method="post" action="/app/profiles">
-			<input name="id" value="76561197993451745" />
-			<button>Add</button>
-		</form>
+		<div class="navbar-fixed">
+			<nav>
+				<div class="nav-wrapper">
+					<a href="#/" class="brand-logo">Achievement Hunter</a>
+					<ul class="right hide-on-med-and-down">
+						<!-- <li><a href="#"></a></li> -->
+						<!-- <li><a href="#"></a></li> -->
+					</ul>
+				</div>
+			</nav>
+		</div>
+		<main class="container"></main>
+		<footer class="page-footer">
+			<div class="container">
+				<div class="row">
+				<div class="col s12">
+					<!-- <h5 class="white-text">Footer Content</h5> -->
+					<p class="grey-text text-lighten-4">This is <strong>not</strong> an official Steam tool, therefore it could stop working at any time.</p>
+					<p class="grey-text text-lighten-4">Steam is a trademark of Valve Corporation. All game logos are property of their respective owners.</p>
+				</div>
+			</div>
+		</div>
+		<div class="footer-copyright">
+			<div class="container">
+				Copyright &copy; 2018 Andrew Cockayne
+				<!-- <a class="grey-text text-lighten-4 right" href="#!">More Links</a> -->
+			</div>
+		</div>
+		</footer>
 	</body>
 </html>

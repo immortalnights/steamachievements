@@ -1,4 +1,7 @@
 # Ignore these files
 node_modules
+server/mongodb.log
+server/mongodb.*
 nginx.exe
 config.json
+start.lnk

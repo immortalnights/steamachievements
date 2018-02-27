@@ -1,0 +1,28 @@
+body {
+	display: flex;
+	min-height: 100vh;
+	flex-direction: column;
+	background-color: #303030
+}
+
+nav {
+	background-color: #212121;
+}
+
+main {
+	flex: 1 0 auto;
+}
+
+.page-footer {
+	background-color: #212121;
+	font-size: 0.8em;
+}
+
+.page-footer p {
+	margin-top: 6px;
+	margin-bottom: 6px;
+}
+
+.page-footer .footer-copyright {
+	background-color: #131212;
+}

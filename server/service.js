@@ -60,7 +60,7 @@ const checkProfiles = function() {
 
 			// refresh the players games
 			console.log("Games required for", playerId)
-			queue.push(tasks.getPlayerGames(playerId, steam, db, queue));
+			queue.push(tasks.getPlayerGames(playerId, queue));
 		});
 
 		return documents;
