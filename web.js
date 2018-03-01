@@ -6,6 +6,8 @@ const Database = require('./lib/database');
 const app = express();
 const router = express.Router();
 
+app.use(express.static('public'));
+app.use('/node_modules', express.static('node_modules'));
 app.use(express.json());
 
 const db = new Database('achievementhunter');
@@ -95,7 +97,7 @@ db.connect('mongodb://localhost:27017')
 			});
 		})
 
-	app.listen(2000, () => console.log("Listening on port 2000"))
+	app.listen(80, () => console.log("Listening on port 80"))
 })
 .catch((error) => {
 	console.error("Error", error);
