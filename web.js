@@ -20,7 +20,7 @@ db.connect('mongodb://localhost:27017')
 .then(() => {
 	// app.get('/', (req, res) => res.send('OK'));
 
-	app.use('/', router);
+	app.use('/app', router);
 
 	router.route('/profiles')
 		// get profile(s)
@@ -97,7 +97,7 @@ db.connect('mongodb://localhost:27017')
 			});
 		})
 
-	app.listen(80, () => console.log("Listening on port 80"))
+	app.listen(8080, () => console.log("Listening on port 8080"))
 })
 .catch((error) => {
 	console.error("Error", error);
