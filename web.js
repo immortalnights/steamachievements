@@ -110,7 +110,16 @@ db.connect('mongodb://localhost:27017')
 	app.use('/node_modules', express.static('node_modules'));
 
 	const port = config.HTTPPort || 8080
-	app.listen(port, () => console.log("Listening on port", port))
+	console.log("Starting express server on", port);
+
+	try
+	{
+		app.listen(port, () => console.log("Listening on port", port));
+	}
+	catch (err)
+	{
+		console.error("Failed to start Express", err);
+	}
 })
 .catch((error) => {
 	console.error("Error", error);
