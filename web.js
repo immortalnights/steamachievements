@@ -1,24 +1,19 @@
 'use strict';
 
 const express = require('express');
+const config = require('./config.json');
 const Database = require('./lib/database');
-
-const app = express();
-const router = express.Router();
-
-app.use(express.static('public'));
-app.use('/node_modules', express.static('node_modules'));
-app.use(express.json());
-
-const db = new Database('achievementhunter');
 
 process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 
+const db = new Database('achievementhunter');
 db.connect('mongodb://localhost:27017')
 .then(() => {
-	// app.get('/', (req, res) => res.send('OK'));
+	const app = express();
+	const router = express.Router();
+	app.use(express.json());
 
 	app.use('/app', router);
 
@@ -97,7 +92,11 @@ db.connect('mongodb://localhost:27017')
 			});
 		})
 
-	app.listen(8080, () => console.log("Listening on port 8080"))
+	app.use(express.static('public'));
+	app.use('/node_modules', express.static('node_modules'));
+
+	const port = config.HTTPPort || 8080
+	app.listen(port, () => console.log("Listening on port", port))
 })
 .catch((error) => {
 	console.error("Error", error);
