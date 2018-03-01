@@ -12,11 +12,23 @@ const db = new Database('achievementhunter');
 db.connect('mongodb://localhost:27017')
 .then(() => {
 	const app = express();
-	const router = express.Router();
+
+	// JSON middleware
 	app.use(express.json());
 
-	app.use('/app', router);
+	// Catch-all debugging
+	// app.use(function(req, res, next) {
+	// 	console.log("Catch-all route");
+	// 	next();
+	// });
 
+	// API router
+	const router = express.Router();
+	router.use(function(req, res, next) {
+		console.log("Route API");
+		next();
+	});
+	router.route('/error').get((req, res) => { throw new Error("T"); });
 	router.route('/profiles')
 		// get profile(s)
 		.get((req, res) => {
@@ -73,7 +85,6 @@ db.connect('mongodb://localhost:27017')
 				res.status(400).send({ error: "Invalid player Id (missing identifier)" });
 			}
 		});
-
 	router.route('/profiles/:id')
 		// get profile
 		.get((req, res) => {
@@ -90,7 +101,10 @@ db.connect('mongodb://localhost:27017')
 				console.error("Error", error);
 				res.send(error);
 			});
-		})
+		});
+
+	// Apply API router
+	app.use('/api', router);
 
 	app.use(express.static('public'));
 	app.use('/node_modules', express.static('node_modules'));

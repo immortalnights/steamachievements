@@ -43,7 +43,7 @@ define(function(require) {
 
 			var self = this;
 			form.on('serialized', function(formData) {
-				Backbone.ajax('/app/profiles', {
+				Backbone.ajax('/api/profiles', {
 					method: 'post',
 					data: JSON.stringify(formData),
 					contentType: 'application/json'
@@ -71,7 +71,7 @@ define(function(require) {
 			else
 			{
 				var Player = Backbone.Model.extend({
-					url: function() { return '/app/profiles/' + encodeURIComponent(this.id); }
+					url: function() { return '/api/profiles/' + encodeURIComponent(this.id); }
 				});
 
 				var player = new Player({
