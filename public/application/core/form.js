@@ -21,8 +21,6 @@ define(function(require) {
 
 		onSubmit: function(event)
 		{
-			this.$el.find('button[type=submit]').prop('disabled', true);
-
 			event.preventDefault();
 
 			var dataArray = this.$el.serializeArray();
