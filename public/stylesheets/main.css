@@ -2,7 +2,8 @@ body {
 	display: flex;
 	min-height: 100vh;
 	flex-direction: column;
-	background-color: #303030
+	background-color: #303030;
+	font-family: Arial, Helvetica;
 }
 
 nav {
@@ -25,4 +26,23 @@ main {
 
 .page-footer .footer-copyright {
 	background-color: #131212;
+}
+
+.summary-statistics {
+	color: #fff;
+	font-weight: 200;
+	font-family: 'Motiva Sans';
+}
+
+.summary-statistics .value{
+	font-size: 2em;
+	line-height: 1em;
+}
+
+.summary-statistics label{
+	font-size: 1em;
+	display: block;
+	color: #9b9b9b;
+	white-space: nowrap;
+	line-height: 1em;
 }

@@ -67,7 +67,7 @@ const parsePlayerIdentifier = function(identifier) {
 }
 
 const steam = new Steam(config.SteamAPIKey);
-const db = new Database('achievementhunter');
+const db = new Database('achievementchaser');
 
 db.connect('mongodb://localhost:27017')
 .then(() => {
@@ -205,43 +205,115 @@ db.connect('mongodb://localhost:27017')
 				res.status(404).send(err);
 			});
 		});
-	router.route('/players/:id')
-		// get player
+
+	// router.route('/Players/:id')
+	// 	// get player
+	// 	.get((req, res) => {
+	// 		db.getPlayers({ _id: req.params.id }).then((records) => {
+	// 			if (records.length === 1)
+	// 			{
+	// 				res.send(records[0]);
+	// 			}
+	// 			else
+	// 			{
+	// 				res.status(404).send({ error: "Unable to find requested players." });
+	// 			}
+	// 		}).catch((error) => {
+	// 			console.error("Error", error);
+	// 			res.send(error);
+	// 		});
+	// 	});
+
+
+	// router.route('/Player/:id/Games/HighestCompletion')
+	// 	.get((req, res) => {
+	// 		const playerId = req.params.id;
+
+	// 		console.log("find player", playerId);
+	// 		db.getPlayers({ _id: playerId })
+	// 		.then(function() {
+	// 			res.send("OK");
+	// 		})
+	// 	});
+
+	// router.route('/Player/:id/Games/LowestCompletion')
+	// 	.get((req, res) => {
+	// 		const playerId = req.params.id;
+
+	// 		console.log("find player", playerId);
+	// 		db.getPlayers({ _id: playerId })
+	// 		.then(function() {
+	// 			res.send("OK");
+	// 		})
+	// 	});
+
+	// router.route('/Player/:id/Games/Easiest')
+	// 	.get((req, res) => {
+	// 		const playerId = req.params.id;
+
+	// 		console.log("find player", playerId);
+	// 		db.getPlayers({ _id: playerId })
+	// 		.then(function() {
+	// 			res.send("OK");
+	// 		})
+	// 	});
+
+	// router.route('/Player/:id/Achievements/Easiest')
+	// 	.get((req, res) => {
+	// 		const playerId = req.params.id;
+
+	// 		console.log("find player", playerId);
+	// 		db.getPlayers({ _id: playerId })
+	// 		.then(function() {
+	// 			res.send("OK");
+	// 		})
+	// 	});
+
+	const playerRouter = express.Router();
+	playerRouter.param('id', (req, res, next, playerId) => {
+		console.log("Check player", playerId);
+
+		db.getPlayers({ _id: playerId })
+		.then(function(records) {
+			if (records.length === 1)
+			{
+				req.player = records[0];
+				return next();
+			}
+			else
+			{
+				res.status(404).send({ error: "Player not found." });
+			}
+		});
+	});
+
+	playerRouter.route('/Players/:id')
 		.get((req, res) => {
-			db.getPlayers({ _id: req.params.id }).then((records) => {
-				if (records.length === 1)
-				{
-					res.send(records[0]);
-				}
-				else
-				{
-					res.status(404).send({ error: "Unable to find requested players." });
-				}
-			}).catch((error) => {
-				console.error("Error", error);
-				res.send(error);
-			});
+			res.send(req.player);
 		});
 
-	router.route('/gamesummary/:id')
+	playerRouter.route('/Player/:id/Summary')
 		.get((req, res) => {
-			const query = { playerId: req.params.id };
-// TODO check player even exists
-			db.getPlayerGameSummary(query)
+			const playerId = req.player._id;
+
+			console.log("get player game summary", playerId);
+			return db.getPlayerGameSummary({ playerId: playerId })
 			.then(function(gameSummary) {
-				console.log("summary", gameSummary);
+				// console.log("summary", gameSummary);
 
-				return db.getPlayerAchievementSummary(query)
+				console.log("get player achievement summary", playerId);
+				return db.getPlayerAchievementSummary({ playerId: playerId })
 				.then(function(achievementSummary) {
-					console.log("game summary", achievementSummary);
+					// console.log("game summary", achievementSummary);
 
-					res.send(_.extend({}, gameSummary, achievementSummary));
+					res.send(_.extend({}, { games: gameSummary }, { achievements: achievementSummary }));
 				});
-			})
+			});
 		});
 
 	// Apply API router
 	app.use('/api', router);
+	app.use('/api', playerRouter);
 
 	app.use(express.static('public'));
 	app.use('/node_modules', express.static('node_modules'));

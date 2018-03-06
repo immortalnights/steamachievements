@@ -1,8 +1,5 @@
 'use strict';
 
-// TODO handle private profiles
-//This represents whether the profile is visible or not, and if it is visible, why you are allowed to see it. Note that because this WebAPI does not use authentication, there are only two possible values returned: 1 - the profile is not visible to you (Private, Friends Only, etc), 3 - the profile is "Public", and the data is visible. Mike Blaszczak's post on Steam forums says, "The community visibility state this API returns is different than the privacy state. It's the effective visibility state from the account making the request to the account being viewed given the requesting account's relationship to the viewed account."
-
 const debug = require('debug')('service');
 const Queue = require('queue');
 const _ = require('underscore');
@@ -12,7 +9,7 @@ const Steam = require('./lib/steam');
 const taskManager = require('./lib/tasks');
 const config = require('./config.json');
 
-const db = new Database('achievementhunter');
+const db = new Database('achievementchaser');
 const queue = new Queue({
 	// autostart: true,
 	concurrency: 10
@@ -61,9 +58,15 @@ const checkProfiles = function() {
 			console.log("Profile required for", playerId)
 			queue.push(tasks.getProfile(playerId, steam, db));
 
-			// refresh the players games
-			console.log("Games required for", playerId)
-			queue.push(tasks.getPlayerGames(playerId, queue));
+			// Only request games if the profile is public
+			// 1 - the profile is not visible to you (Private, Friends Only, etc), 
+			// 3 - the profile is "Public", and the data is visible.
+			if (doc.steam.communityvisibilitystate === 3)
+			{
+				// refresh the players games
+				console.log("Games required for", playerId)
+				queue.push(tasks.getPlayerGames(playerId, queue));
+			}
 		});
 
 		return documents;

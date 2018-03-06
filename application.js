@@ -3,7 +3,7 @@
 const subprocess = require('child_process')
 const Database = require('./lib/database');
 
-const db = new Database('achievementhunter');
+const db = new Database('achievementchaser');
 db.connect('mongodb://localhost:27017')
 .then(function() {
 	return db.initialize();

@@ -2,6 +2,7 @@ define(function(require) {
 	'use strict';
 	var Marionette = require('backbone.marionette');
 	var Router = require('core/router');
+	var viewmixin = require('core/viewmixin');
 	var translation = require('core/translation');
 	var rootTemplate = require('tpl!core/templates/root.html');
 
