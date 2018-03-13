@@ -1,6 +1,6 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
-	var HighestCompletionGames = require('collections/highestcompletiongames');
+	var PlayerGames = require('collections/playergames');
 	var playerTemplate = require('tpl!player/templates/layout.html');
 	var summaryTemplate = require('tpl!player/templates/summary.html');
 	var gameTemplate = require('tpl!player/templates/game.html');
@@ -61,16 +61,29 @@ define(function(require) {
 				}
 			});
 
-			var highestGames = new HighestCompletionGames(null, { playerId: this.model.id });
+			var highestGames = new PlayerGames(null, { playerId: this.model.id });
 			this.showChildView('highestGamesLocation', new List({
 				collection: highestGames,
 			}));
-			highestGames.fetch();
+			highestGames.fetch({ data: { 'order-by': 'percent ASC' } });
 
-			// var highestGames = new LowestCompletionGames(null, { playerId: this.model.id });
+			var lowestGames = new PlayerGames(null, { playerId: this.model.id });
+			this.showChildView('lowestGamesLocation', new List({
+				collection: lowestGames,
+			}));
+			lowestGames.fetch({ data: { 'order-by': 'percent DESC' } });
+
+			var easiestGames = new PlayerGames(null, { playerId: this.model.id });
+			this.showChildView('easiestGamesLocation', new List({
+				collection: easiestGames,
+			}));
+			easiestGames.fetch({ data: { 'order-by': 'globalPercentage ASC' } });
+
+			// var lowestGames = new PlayerGames(null, { playerId: this.model.id });
 			// this.showChildView('lowestGamesLocation', new List({
-			// 	collection: null
+			// 	collection: lowestGames,
 			// }));
+			// lowestGames.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 
 			// this.showChildView('easiestGamesLocation', new List({
 			// 	collection: null
