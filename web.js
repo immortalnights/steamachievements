@@ -11,61 +11,6 @@ process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 
-const parsePlayerIdentifier = function(identifier) {
-	console.log("parsing player identifier", identifier);
-	// Parse steamcommunity urls
-	const parseUrl = function(url) {
-		const split = function(url, key) {
-			let keyOffset = url.indexOf(key);
-			let name;
-
-			if (-1 !== keyOffset)
-			{
-				name = url.substring(keyOffset + key.length);
-			}
-			
-			return name;
-		};
-
-		let name = split(url, '/id/') || split(url, '/profiles/');
-
-		if (name)
-		{
-			let offset = name.indexOf('/');
-			if (-1 !== offset)
-			{
-				name = name.substring(0, offset);
-			}
-		}
-
-		console.log(identifier, "=>", name);
-		return name;
-	};
-
-	let result = {};
-
-	// Parse the idetifier if it looks like a community url
-	if (-1 !== identifier.indexOf('steamcommunity.com'))
-	{
-		identifier = parseUrl(identifier);
-	}
-
-	// Converting to a number will loose some presistion, but only checking for NaN
-	if (identifier.length === 17 && Number(identifier))
-	{
-		result.id = identifier;
-	}
-	else
-	{
-		// assume vanity name
-		result.vanity = identifier;
-	}
-
-	console.log("parsed identifier", result);
-
-	return result;
-}
-
 const steam = new Steam(config.SteamAPIKey);
 const db = new Database('achievementchaser');
 

@@ -1,6 +1,10 @@
-<img alt="<%- name %>" title="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- appid %>/<%- img_logo_url %>.jpg" />
-<% if (obj.percentage) { %>
-	<span title="<%- unlocked %> of <%- total %>"><%- percentage.toFixed(1) %>%</span>
-<% } else if (obj.globalPercentage) { %>
-	<span><%- globalPercentage.toFixed(1) %>%</span>
-<% } %>
+<a href="http://store.steampowered.com/app/<%- appid %>">
+	<% if (obj.percentage) { %>
+		<span title="<%- name %> - <%- unlocked %> of <%- total %> (<%- percentage.toFixed(1) %>%)">
+	<% } else if (obj.lowestGlobalPercentage) { %>
+		<span title="<%- name %> - <%- lowestGlobalPercentage.toFixed(1) %>%">
+	<% } %>
+
+		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- appid %>/<%- img_logo_url %>.jpg" />
+	</span>
+</span>

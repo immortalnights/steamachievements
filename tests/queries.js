@@ -67,6 +67,7 @@ db.player_games.aggregate([ {
 db.player_games.aggregate([ {
 	$match: {
 		'playerId': '76561197993451745',
+		'playtime_forever': { $ne: 0 },
 		'achievements': { $type: 'array' }
 	}
 }, {
@@ -110,6 +111,7 @@ db.player_games.aggregate([ {
 db.player_games.aggregate([ {
 	$match: {
 		'playerId': '76561197993451745',
+		'completed': { $ne: true },
 		'achievements': { $type: 'array' }
 	}
 }, {
@@ -150,3 +152,59 @@ db.player_games.aggregate([ {
 }, {
 	$sort: { 'percentage': -1 }
 } ])
+
+db.player_games.aggregate([ {
+	$match: {
+		'playerId': '76561197993451745',
+		'completed': { $ne: true },
+		'achievements': { $type: 'array' }
+	}
+}, {
+	$project: {
+
+		achieve: {
+			$filter: {
+				input: '$achievements',
+				as: 'achievement',
+				cond: { $eq: [ '$$achievement.unlocked', 0 ] }
+			}
+		}
+	}
+}, {
+	$lookup: {
+		from: 'games',
+		let: {
+			appid: '$appid',
+			required: {
+				$map: {
+					input: '$achievements',
+					as: 'achievement',
+					in: '$$achievement.apiname'
+				}
+			}
+		},
+		pipeline: [{
+			$match: {
+				$expr: { $eq: [ "$_id", "$$appid"] }
+			},
+		}, {
+			$project: {
+				_id: null,
+				achievements: 1
+			}
+		}],
+		as: 'schema'
+	}
+}, {
+	$unwind: '$schema'
+}, {
+	$project: {
+		mergedAchievements: {
+			$setUnion: [ '$achievements', '$schema.achievements' ]
+		}
+	}
+}]).pretty();
+
+, {
+	$setUnion: [ '$achievements', '$schema.achievements']
+}
