@@ -2,31 +2,6 @@
 const Database = require('../lib/database');
 const _ = require('underscore');
 
-const updateGames = function(offset, count)  {
-
-	const collection = db.collection('player_games');
-
-	const cursor = collection.find({}, { offset: offset, limi })
-
-	cursor.each(function(document) {
-		console.log("process", doc.appid, "for", doc.playerId);
-	});
-	// .then(function(documents) {
-
-	// 	console.log("process", documents.length, "documents");
-	// 	for (doc in documents)
-	// 	{
-	// 		console.log("process", doc.appid, "for", doc.playerId);
-	// 	}
-
-	// 	return documents;
-	// })
-	// .then(function(documents) {
-
-	// });
-}
-
-let offset = 0;
 
 const db = new Database('achievementchaser');
 db.connect()

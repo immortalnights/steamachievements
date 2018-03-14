@@ -101,12 +101,66 @@ db.player_games.aggregate([ {
 		}
 	}
 }, {
-	$match: { 'percentage': { $ne: 100 } } 
+	$match: { $and: [ { 'percentage': { $ne: 100 } } , { 'percentage': { $ne: 0 } } ] }
 }, {
 	$sort: { 'percentage': -1 }
 }, {
 	$limit : 10
 } ]);
+
+// player game completion 2
+db.player_achievements.aggregate([ {
+	$match: {
+		playerId: "76561197993451745"
+	}
+}, {
+	$group: {
+		_id: '$appid',
+		total: { $sum: 1 },
+		unlocked: { $sum: '$achieved' }
+	}
+}, {
+	$addFields: {
+		percentage: {
+			$multiply: [{
+				$divide: [ '$unlocked', '$total' ]
+			}, 100 ]
+		}
+	}
+}, {
+	$match: { $and: [ { 'percentage': { $ne: 100 } } , { 'percentage': { $ne: 0 } } ] }
+}, {
+	$sort: { 'percentage': -1 }
+}, {
+	$limit : 10
+}, {
+	$lookup: {
+		from: 'player_games',
+		let: {
+			appid: '$_id'
+		},
+		pipeline: [{
+			$match: {
+				playerId: "76561197993451745",
+				$expr: { $eq: [ "$appid", "$$appid"] }
+			},
+		}, {
+			$project: {
+				_id: 0,
+				name: 1,
+				img_icon_url: 1,
+				img_logo_url: 1,
+				playtime_forever: 1
+			}
+		}],
+		as: 'schema'
+	}
+}, {
+	$replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ '$schema', 0 ] }, '$$ROOT' ] } }
+}, {
+	$project: { schema: 0 }
+} ]).pretty()
+
 
 db.player_games.aggregate([ {
 	$match: {
@@ -161,7 +215,6 @@ db.player_games.aggregate([ {
 	}
 }, {
 	$project: {
-
 		achieve: {
 			$filter: {
 				input: '$achievements',
