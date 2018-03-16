@@ -258,6 +258,124 @@ db.player_games.aggregate([ {
 	}
 }]).pretty();
 
-, {
-	$setUnion: [ '$achievements', '$schema.achievements']
-}
+db.player_achievements.aggregate([ {
+	$match: {
+		playerId: '76561197993451745',
+		achieved: 0
+	}
+}, {
+	$lookup: {
+		from: 'game_achievements',
+		let: {
+			appid: '$appid',
+			apiname: '$apiname'
+		},
+		pipeline: [{
+			$match: {
+				$expr: {
+					$and: [
+						{ $eq: [ '$appid', '$$appid' ] },
+						{ $eq: [ '$name', '$$apiname' ] }
+					]
+				}
+			}
+		}, {
+			$project: {
+				_id: 0,
+				displayName: 1,
+				description: 1,
+				icon: 1,
+				icongray: 1,
+				percent: 1
+			}
+		}],
+		as: 'schema'
+	}
+}, {
+	$sort: { 'schema.percent': -1 }
+}, {
+	$limit: 10
+}]).pretty();
+
+
+db.game_achievements.aggregate([ {
+	$lookup: {
+		from: 'player_achievements',
+		let: {
+			appid: '$appid',
+			name: '$name'
+		},
+		pipeline: [{
+			$match: {
+				$expr: {
+					$and: [
+						{ $eq: [ '$playerId', '76561197993451745' ] },
+						{ $eq: [ '$achieved', 0 ] },
+						{ $eq: [ '$appid', '$$appid' ] },
+						{ $eq: [ '$apiname', '$$name' ] }
+					]
+				}
+			}
+		}],
+		as: 'player_achievement'
+	}
+},{
+	$sort: { 'percent': -1 }
+}, {
+	$limit: 10
+}, {
+	$lookup: {
+		from: 'games',
+		// localField: 'appid',
+		// foreignField: '_id',
+		let: {
+			appid: '$appid'
+		},
+		pipeline: [{
+			$match: {
+				$expr: { $eq: [ '$_id', '$$appid' ] } 
+			}
+		}, {
+			$project: {
+				achievements: 0,
+				stats: 0
+			}
+		}],
+		as: 'schema'
+	}
+}]).pretty();
+
+db.player_achievements.aggregate([ {
+	$lookup: {
+		from: 'game_achievements',
+		let: {
+			appid: '$appid',
+			name: '$apiname'
+		},
+		pipeline: [{
+			$match: {
+				$expr: {
+					$and: [
+						{ $eq: [ '$appid', '$$appid' ] },
+						{ $eq: [ '$name', '$$name' ] }
+					]
+				}
+			}
+		}],
+		as: 'schema'
+	}
+}]).pretty();
+
+
+
+
+// , {
+// 			$project: {
+// 				_id: 0,
+// 				displayName: 1,
+// 				description: 1,
+// 				icon: 1,
+// 				icongray: 1,
+// 				percent: 1
+// 			}
+// 		}
