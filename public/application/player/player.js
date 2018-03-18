@@ -5,6 +5,7 @@ define(function(require) {
 	var playerTemplate = require('tpl!player/templates/layout.html');
 	var summaryTemplate = require('tpl!player/templates/summary.html');
 	var gameTemplate = require('tpl!player/templates/game.html');
+	var achievementTemplate = require('tpl!player/templates/achievement.html');
 
 	return Marionette.View.extend({
 		template: playerTemplate,
@@ -15,6 +16,13 @@ define(function(require) {
 			lowestGamesLocation: '#lowestcompetiongames',
 			easiestGamesLocation: '#easiestgames',
 			easiestAchievementsLocation: '#easiestachievements',
+		},
+
+		initialize: function(options)
+		{
+			console.log(this.model);
+
+			document.title = this.model.get('steam').personaname + ' - Achievement Chaser';
 		},
 
 		onRender: function()
@@ -64,25 +72,33 @@ define(function(require) {
 
 			var highestGames = new PlayerGames(null, { playerId: this.model.id });
 			this.showChildView('highestGamesLocation', new List({
+				className: 'game-list',
 				collection: highestGames,
 			}));
-			highestGames.fetch({ data: { 'order-by': 'percent ASC' } });
+			highestGames.fetch({ data: { 'order-by': 'percent DESC' } });
 
 			var lowestGames = new PlayerGames(null, { playerId: this.model.id });
 			this.showChildView('lowestGamesLocation', new List({
+				className: 'game-list',
 				collection: lowestGames,
 			}));
-			lowestGames.fetch({ data: { 'order-by': 'percent DESC' } });
+			lowestGames.fetch({ data: { 'order-by': 'percent ASC' } });
 
 			var easiestGames = new PlayerGames(null, { playerId: this.model.id });
 			this.showChildView('easiestGamesLocation', new List({
+				className: 'game-list',
 				collection: easiestGames,
 			}));
-			easiestGames.fetch({ data: { 'order-by': 'globalPercentage ASC' } });
+			easiestGames.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 
 			var easiestAchievements = new PlayerAchievements(null, { playerId: this.model.id });
 			this.showChildView('easiestAchievementsLocation', new List({
+				className: 'row',
 				collection: easiestAchievements,
+				childViewOptions: _.defaults({
+					template: achievementTemplate,
+					className: 'col s6',
+				}, List.prototype.childViewOptions)
 			}));
 			easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 		}

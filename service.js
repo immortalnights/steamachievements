@@ -10,141 +10,236 @@ const taskManager = require('./lib/tasks');
 const config = require('./config.json');
 
 const db = new Database('achievementchaser');
-const queue = new Queue({
-	// autostart: true,
-	concurrency: 10
-});
 const steam = new Steam(config.SteamAPIKey);
-// binds the current steam and db instance to the task manager
-const tasks = taskManager(steam, db);
 
 process.on('unhandledRejection', (reason, p) => {
-	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+	console.trace('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 
-const TICK_TIME = 60000;
+const q = Queue({
+	concurrency: 3
+});
 
-// debug
-queue.on('success', function (result, job) {
-	if (_.isString(result))
+// automatically refresh player data every 24h
+async function refreshPlayers() {
+	const yesterday = moment().add(-1, 'days');
+
+	try
 	{
-		console.log(result);
-	}
-});
-queue.on('error', function (err, job) {
-	console.trace('job failed', err, job.toString());
+		const documents = await db.getPlayers({ $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]});
+		console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
 
-	if (_.isString(err))
-	{
-		console.log(err);
-	}
-});
-
-// find any profiles which require refreshing
-const checkProfiles = function() {
-	console.log("Check profiles");
-	const lastUpdated = moment().add(-1, 'days');
-
-	return db.getPlayers({ $or: [ { updated: { "$lt": lastUpdated.toDate() } } ]})
-	.then(function(documents) {
-		console.log("found %i profile(s) which require updating", documents.length, _.pluck(documents, '_id'));
 
 		documents.forEach(function(doc, index) {
-			// console.log("doc", doc);
-
-			const playerId = doc._id;
-
-			// refresh the players profile
-			console.log("Profile required for", playerId)
-			queue.push(tasks.getProfile(playerId, steam, db));
-
-			// Only request games if the profile is public
-			// 1 - the profile is not visible to you (Private, Friends Only, etc), 
-			// 3 - the profile is "Public", and the data is visible.
-			if (doc.steam.communityvisibilitystate === 3)
-			{
-				// refresh the players games
-				console.log("Games required for", playerId)
-				queue.push(tasks.getPlayerGames(playerId, queue));
-			}
+			q.push(refreshPlayer(doc._id));
 		});
 
-		return documents;
-	})
+		q.on('success', function() {
+			console.log("Jobs completed.");
+		});
+
+		q.on('end', function() {
+			console.log("All jobs completed.");
+			db.close();
+		});
+
+		q.start();
+	}
+	catch (exception)
+	{
+		console.error(exception);
+	}
+}
+
+async function registerGame(playerId, game) {
+	// get the achievements for the new game
+	// FIXME the database might already have this game, perhaps it would be better to
+	// check before loading the scheam from Steam.
+	let schema = await steam.getSchemaForGame(game.appid)
 	.catch(function(err) {
-		console.error("failed to get profiles to check", err);
+		console.error("Failed to get scheam for game", game.appid);
+	});
+
+	if (!_.isEmpty(schema) && schema.availableGameStats)
+	{
+		schema = schema.availableGameStats;
+	}
+	else
+	{
+		schema.achievements = false;
+	}
+
+	const result = await db.registerGame(playerId, game, schema);
+	console.log("registered game", game.appid);
+
+	// update game achievements, if applicable
+	if (!_.isEmpty(schema.achievements))
+	{
+		console.log("has achievements");
+
+		// If the result is null, the game was not previously registered and the achievement schema will be required
+		if (!result)
+		{
+			// Game did not exist, player and global achievements required
+			q.push(function() {
+				console.log("update global");
+				return updateGlobalAchievementsForGame(game.appid);
+			});
+
+			q.push(function() {
+				console.log("update player2");
+				return updatePlayerAchievementsForGame(playerId, game.appid);
+			});
+		}
+		else
+		{
+			// Game exists, player achievements required
+			q.push(function() {
+				console.log("update player1");
+				return updatePlayerAchievementsForGame(playerId, game.appid);
+			});
+		}
+	}
+}
+
+async function updateRegisteredGame(playerId, game) {
+	await db.updateGamePlaytime(game.appid, playerId, game.playtime_forever, game.playtime_2weeks);
+
+	// Update player achievements for this game
+	q.push(function() {
+		return updatePlayerAchievementsForGame(playerId, game.appid);
 	});
 }
 
-// find any games which require refreshing or loading
-const checkPlayerGames = function() {
-	console.log("Check player games");
-	return db.getPlayerGames({ playtime_forever: { $ne: 0 }, achievements: 'pending' })
-	.then(function(documents) {
-		console.log("update achievements for %i game(s)", documents.length, _.pluck(documents, 'appid'));
+async function updateGlobalAchievementsForGame(gameId) {
+	const achievements = await steam.getGlobalAchievementPercentagesForGame(gameId);
 
-		documents.forEach(function(doc, index) {
-			queue.push(tasks.getPlayerAchievements(doc.playerId, doc.appid, doc._id));
+	if (_.isEmpty(achievements))
+	{
+		let updates = [];
+		_.each(achievements, function(achievement) {
+			updates.push(db.setGameAchievementGlobalPercent(gameId, achievement.name, achievement.percent));
 		});
 
-		return documents;
-	})
-	.catch(function(err) {
-		console.error("failed to get player games to update", err);
-	});
+		await Promise.all(updates);
+
+		await db.setGameResynchronizationTime(gameId);
+	}
 }
 
-const checkGameSchema = function() {
-	console.log("Check games")
-	return db.getPlayerGamesWithoutSchema()
-	.then(function(documents) {
-		console.log("fetching schema for %i games", documents.length, _.pluck(documents, 'appid'));
+async function updatePlayerAchievementsForGame(playerId, gameId) {
+	const achievements = await steam.getPlayerAchievementsForGame(playerId, gameId);
 
-		let processed = {};
-		_.each(documents, function(game) {
-			if (!processed[game.appid])
+	if (!_.isEmpty(achievements))
+	{
+		let updates = [];
+		_.each(achievements, function(achievement) {
+			if (achievement.achieved)
 			{
-				processed[game.appid] = true;
-
-				queue.push(tasks.getGameSchema(game));
-			}
-			else
-			{
-				// Skip
+				const unlocktime = achievement.unlocktime || true;
+				updates.push(db.setGameAchievementAchieved(gameId, playerId, achievement.apiname, unlocktime));
 			}
 		});
-	})
-	.catch(function(err) {
-		console.error("failed to get missing schema", err);
-	});
+
+		const perfect = _.every(achievements, function(achievement) {
+			return achievement.achieved;
+		});
+
+		await Promise.all(updates);
+
+		if (perfect)
+		{
+			console.log("setting perfect game", gameId, playerId);
+			await db.setPerfectGame(gameId, playerId);
+		}
+
+		// await db.setGameResynchronizationTime(gameId);
+	}
 }
 
-const checkDatabase = function() {
-	let checks = [];
-	checks.push(checkProfiles());
-	checks.push(checkPlayerGames());
-	checks.push(checkGameSchema());
+const refreshPlayer = function(playerId) {
+	return (async function() {
+		try
+		{
+			const summary = await steam.getSummary(playerId);
+			debug("player summary", summary);
 
-	Promise.all(checks).then(function() {
-		console.log("Database queries completed, start queue");
+			// use the database id property
+			delete summary.steamid;
 
-		queue.start(function() {
-			console.log("Queue completed");
-			setTimeout(checkDatabase, TICK_TIME);
-		});
-	})
-	.catch(function(err) {
-		console.error("failed to perform database check", err);
+			console.log("updating player %s (%s)", summary.personaname, playerId);
+			await db.updatePlayer(playerId, {
+				// resynchronized: new Date(),
+				steam: summary
+			});
+
+			let [ownedGames, registeredGames] = await Promise.all([ steam.getOwnedGames(playerId), db.getPlayerGames(playerId, { sort: '_id' }) ]);
+
+			// order owned games (from steam) by app id
+			// ownedGames = _.sortBy(ownedGames, 'appid' );
+
+			// index owned and registered games
+			const indexedOwnedGames = _.indexBy(ownedGames, 'appid');
+			const indexedRegisteredGames = _.indexBy(registeredGames, '_id');
+
+			// console.log("ownedGames=", ownedGames[0]);
+			// console.log("registeredGames=", registeredGames[0]);
+
+			// Identify new or played games by iterating over the steam result set
+			_.each(ownedGames, function(ownedGame, index) {
+				// find the approprate game from the database set (if it exists)
+				const registeredGame = indexedRegisteredGames[ownedGame.appid];
+
+				if (!registeredGame)
+				{
+					// game is not registered for any players
+					console.log("%s (%s) has new game '%s' (%i)", summary.personaname, playerId, ownedGame.name, ownedGame.appid);
+
+					q.push(function() {
+						return registerGame(playerId, ownedGame);
+					});
+				}
+				else
+				{
+					// get player owner information
+					const registeredOwner = _.findWhere(registeredGame.owners, { playerId: playerId });
+
+					if (!registeredOwner)
+					{
+						console.error("Failed to find registered owner in registered game data", playerId, registeredGame.owners);
+					}
+					else if (ownedGame.playtime_forever !== registeredOwner.playtime_forever)
+					{
+						// game has been played by this player
+						console.log("%s (%s) has played '%s' (%i)", summary.personaname, playerId, ownedGame.name, ownedGame.appid);
+
+						q.push(function() {
+							return updateRegisteredGame(playerId, ownedGame);
+						});
+					}
+					else
+					{
+						// not played, skip
+					}
+				}
+			});
+
+			console.log("Done processing games");
+		}
+		catch (exception)
+		{
+			console.error("Failed to refresh player", exception);
+		}
 	});
 }
 
 db.connect('mongodb://localhost:27017')
 .then(function() {
 	db.initialize();
-	checkDatabase();
+
+	refreshPlayers();
 })
 .catch((error) => {
 	console.error("Error", error);
-	console.log(error);
-	// todo exit
+	process.exit(1);
 });

@@ -1,0 +1,9 @@
+<a href="http://store.steampowered.com/app/<%- obj.appid || obj._id %>">
+	<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg" />
+</a>
+
+<% _.each(achievements.reverse(), function(achievement) { %>
+	<a href="http://store.steampowered.com/stats/<%- obj.appid || obj._id %>/achievements">
+		<img class="achievement-icon" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
+	</a>
+<% }); %>

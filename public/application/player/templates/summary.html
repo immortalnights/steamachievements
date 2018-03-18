@@ -2,29 +2,29 @@
 <% percentUnlocked = ((achievements.unlocked / achievements.total) * 100); %>
 
 <div class="row">
-	<div class="col s4">
+	<div class="col s6">
 		<div class="value"><%- games.total %></div>
 		<label><%- tr("Games") %></label>
 	</div>
 
-	<div class="col s4">
+	<div class="col s6">
 		<div class="value"><span title="Played <%- games.played %> of <%- games.total %> games"><%- percentPlayed.toFixed(2) + '%' %></span></div>
 		<label><%- tr("Played") %></label>
 	</div>
 
-	<div class="col s4">
+	<div class="col s12">
 		<div class="value"><%- moment.duration(games.totalPlaytime, 'minutes').humanize() %></div>
 		<label><%- tr("Playtime") %></label>
 	</div>
 </div>
 
 <div class="row">
-	<div class="col s4">
+	<div class="col s6">
 		<div class="value"><%- games.perfect %></div>
 		<label><%- tr("Perfect Games") %></label>
 	</div>
 
-	<div class="col s4">
+	<div class="col s6">
 		<div class="value"><span title="Unlocked <%- achievements.unlocked %> of <%- achievements.total %> achievements"><%- percentUnlocked.toFixed(2) + '%' %></span></div>
 		<label><%- tr("Achievements Unlocked") %></label>
 	</div>

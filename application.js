@@ -10,11 +10,12 @@ db.connect('mongodb://localhost:27017')
 })
 .then(function() {
 	// fork the web server (API and UI)
-	const web = subprocess.fork('./web.js');
+	// const web = subprocess.fork('./web.js');
 	// fork the service for updating the db
-	// const service = subprocess.fork('./service.js');
+	const service = subprocess.fork('./service.js');
 })
 .catch(function(err) {
 	console.error(err);
+	// TODO fix db connection error not closing / exiting automatically
 	process.exit(1);
 });

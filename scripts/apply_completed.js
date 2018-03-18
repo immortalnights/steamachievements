@@ -2,7 +2,6 @@
 const Database = require('../lib/database');
 const _ = require('underscore');
 
-
 const db = new Database('achievementchaser');
 db.connect()
 .then(function() {

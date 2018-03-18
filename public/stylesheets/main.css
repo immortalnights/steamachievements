@@ -46,3 +46,23 @@ main {
 	white-space: nowrap;
 	line-height: 1em;
 }
+
+ul.game-list > li {
+	display: inline-block;
+	margin: 0 4px;
+}
+
+ul.game-list {
+	margin-bottom: 0;
+}
+
+.view-more-link-container {
+	text-align: right;
+	margin: 0;
+	padding: 0;
+}
+
+.achievement-icon {
+	-webkit-filter: grayscale(100%);
+	filter: grayscale(100%);
+}

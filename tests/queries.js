@@ -346,6 +346,11 @@ db.game_achievements.aggregate([ {
 }]).pretty();
 
 db.player_achievements.aggregate([ {
+	$match: {
+		playerId: '76561197993451745',
+		achieved: 0
+	}
+}, {
 	$lookup: {
 		from: 'game_achievements',
 		let: {
@@ -364,9 +369,39 @@ db.player_achievements.aggregate([ {
 		}],
 		as: 'schema'
 	}
+}, {
+	$unwind: '$schema'
+}, {
+	$sort: { 'schema.percent': 1 }
+}, {
+	$limit: 10
 }]).pretty();
 
-
+db.games.aggregate([{
+	$match: {
+		achievements: {
+			$type: 'array'
+		},
+		'owners.playerId': '76561197993451745',
+		'achievements.players.76561197993451745': {
+			$exists: 0
+		}
+	}
+}, {
+	$project: {
+		_id: 1,
+		name: 1,
+		achievements: 1,
+		img_icon_url: 1,
+		img_logo_url: 1
+	}
+}, {
+	$unwind: '$achievements'
+}, {
+	$sort: { 'achievements.percent': -1 }
+}, {
+	$limit: 10
+}]).pretty();
 
 
 // , {
