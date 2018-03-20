@@ -20,7 +20,6 @@ const q = Queue({
 	concurrency: 3
 });
 
-// automatically refresh player data every 24h
 async function refreshPlayers() {
 	const yesterday = moment().add(-1, 'days');
 
@@ -29,18 +28,17 @@ async function refreshPlayers() {
 		const documents = await db.getPlayers({ $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]});
 		console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
 
-
 		documents.forEach(function(doc, index) {
 			q.push(refreshPlayer(doc._id));
 		});
 
 		q.on('success', function() {
-			console.log("Jobs completed.");
+			// console.log("Job completed.");
 		});
 
 		q.on('end', function() {
 			console.log("All jobs completed.");
-			db.close();
+			// db.close();
 		});
 
 		q.start();
@@ -60,44 +58,38 @@ async function registerGame(playerId, game) {
 		console.error("Failed to get scheam for game", game.appid);
 	});
 
-	if (!_.isEmpty(schema) && schema.availableGameStats)
+	if (!_.isEmpty(schema))
 	{
-		schema = schema.availableGameStats;
-	}
-	else
-	{
-		schema.achievements = false;
-	}
-
-	const result = await db.registerGame(playerId, game, schema);
-	console.log("registered game", game.appid);
-
-	// update game achievements, if applicable
-	if (!_.isEmpty(schema.achievements))
-	{
-		console.log("has achievements");
-
-		// If the result is null, the game was not previously registered and the achievement schema will be required
-		if (!result)
+		if (schema.availableGameStats)
 		{
-			// Game did not exist, player and global achievements required
-			q.push(function() {
-				console.log("update global");
-				return updateGlobalAchievementsForGame(game.appid);
-			});
-
-			q.push(function() {
-				console.log("update player2");
-				return updatePlayerAchievementsForGame(playerId, game.appid);
-			});
+			schema = schema.availableGameStats;
 		}
 		else
 		{
-			// Game exists, player achievements required
-			q.push(function() {
-				console.log("update player1");
-				return updatePlayerAchievementsForGame(playerId, game.appid);
-			});
+			schema.achievements = false;
+		}
+
+		const result = await db.registerGame(playerId, game, schema);
+		console.log("registered game", game.appid);
+
+		// update game achievements, if applicable
+		if (!_.isEmpty(schema.achievements))
+		{
+			// If the result is null, the game was not previously registered and the achievement schema will be required
+			if (!result.value)
+			{
+				// Game did not exist, player and global achievements required
+				q.push(function() {
+					return updateGlobalAchievementsForGame(game.appid);
+				});
+			}
+
+			if (game.playtime_forever)
+			{
+				q.push(function() {
+					return updatePlayerAchievementsForGame(playerId, game.appid);
+				});
+			}
 		}
 	}
 }
@@ -114,7 +106,7 @@ async function updateRegisteredGame(playerId, game) {
 async function updateGlobalAchievementsForGame(gameId) {
 	const achievements = await steam.getGlobalAchievementPercentagesForGame(gameId);
 
-	if (_.isEmpty(achievements))
+	if (!_.isEmpty(achievements))
 	{
 		let updates = [];
 		_.each(achievements, function(achievement) {
@@ -145,6 +137,7 @@ async function updatePlayerAchievementsForGame(playerId, gameId) {
 			return achievement.achieved;
 		});
 
+		console.log("player has unlocked another", updates.length, "achievement(s)");
 		await Promise.all(updates);
 
 		if (perfect)
