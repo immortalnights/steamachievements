@@ -11,10 +11,10 @@ process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
 
-const steam = new Steam(config.SteamAPIKey);
-const db = new Database('achievementchaser');
+const db = new Database(config.database.name);
+const steam = new Steam(config.steamAPIKey);
 
-db.connect('mongodb://localhost:27017')
+db.connect(config.database)
 .then(() => {
 	const app = express();
 

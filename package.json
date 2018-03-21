@@ -16,6 +16,7 @@
     "moment": "^2.21.0",
     "mongodb": "^3.0.4",
     "npm": "^5.7.1",
+    "progress": "^2.0.0",
     "queue": "^4.4.2",
     "requirejs": "^2.3.5",
     "requirejs-text": "^2.0.15",
