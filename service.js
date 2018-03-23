@@ -4,54 +4,198 @@ const debug = require('debug')('service');
 const _ = require('underscore');
 const moment = require('moment');
 const Queue = require('queue');
-const Progress = require('progress');
+const Player = require('./player');
 
-const q = Queue({
-	concurrency: 3
-});
+
+// 
+const SCHEDULE = 10 * 1000;
+
+const taskFactory = function(playerId, database, steam) {
+	console.log("build task")
+	return function() {
+		return new Promise(function(resolve, reject) {
+			const player = new Player(playerId, database, steam);
+
+			player.run().
+			then(function() {
+				console.log("completed resynchronization of", playerId)
+				resolve(playerId);
+			})
+			.catch(function(err) {
+				console.error("failed to resynchronize player", playerId);
+				console.error(err);
+				reject(err);
+			});
+		});
+	}
+};
+
+const canResynchronize = function(doc) {
+	let result = false;
+
+	if (_.isObject(doc))
+	{
+		if (!doc.resynchronized)
+		{
+			result = true;
+			console.log("player", doc._id, "has never been resynchronized");
+		}
+		else
+		{
+			const twoHoursAgo = moment().add(-2, 'hours');
+			const lastResynchronized = moment(doc.resynchronized);
+
+			result = (doc.state === 'ok' && lastResynchronized > twoHoursAgo);
+			console.log("player", doc._id, "last resynchronized", String(lastResynchronized), "(", String(twoHoursAgo), ")", result);
+		}
+	}
+
+	return result;
+}
 
 module.exports = class Service {
 	constructor(db, steam)
 	{
+		this.queue = new Queue({
+			concurrency: 3
+		});
+
 		this.db = db;
 		this.steam = steam;
 	}
 
 	run()
 	{
+		(async () => {
+			console.log("executing start up tasks")
+			await this.db.resetPendingResynchronizations();
+		})();
 
+		const scheduleTask = async function() {
+			console.log("executing schedule task");
+
+			try
+			{
+				await this.resynchronizePlayers()
+				.catch(function() {});
+
+				await this.resynchronizeGames();
+			}
+			catch (exception)
+			{
+				console.error(exception);
+			}
+
+			setTimeout(scheduleTask.bind(this), SCHEDULE);
+		};
+
+		// setTimeout(() => {
+		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
+		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
+		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
+		// }, 5000);
+
+		scheduleTask.call(this);
 	}
 
-	async refreshPlayers()
+	// identifies players which require updating, queues the resynchronizations and starts the queue
+	// @private
+	resynchronizePlayers()
 	{
-		const yesterday = moment().add(-1, 'days');
+		return new Promise(async (resolve, reject) => {
+			const yesterday = moment().add(-1, 'days');
 
-		try
+			try
+			{
+				const documents = await this.db.getPlayers(/*{ $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]}*/);
+
+				console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
+
+				let starting = [];
+				documents.forEach((doc, index) => {
+					starting.push(this.queuePlayerResynchronization(doc._id));
+				});
+
+				console.log("ok")
+
+				// start the queue, resolve the promise once completed
+				console.log("start processing queue", this.queue.length);
+				this.queue.start(function() {
+					console.log("queue completed");
+
+					// FIXME this  will not trigger if players continue to trigger resynchronizations, which could mean,
+					// under a high load, or malicious users, continue triggers would prevent the automatic resynchronization
+					// of other players
+					resolve();
+				});
+			}
+			catch (exception)
+			{
+				console.log("failed to resynchronize players", exception);
+				reject(exception);
+			}
+		});
+	}
+
+	// resynchronize a single player, starts processing the queue immediately
+	resynchronizePlayer(playerId)
+	{
+		return new Promise((resolve, reject) => {
+			try
+			{
+				this.queuePlayerResynchronization(playerId);
+
+				// start the queue, (no effect if already running)
+				console.log("start processing queue");
+				this.queue.start(() => {
+					console.log("individual resynchronization completed", playerId);
+					resolve();
+				});
+			}
+			catch (err)
+			{
+				console.log("failed", err);
+				reject(err);
+			}
+		});
+	}
+
+	// @private
+	async queuePlayerResynchronization(playerId)
+	{
+		// find and update the player record.
+		// if the player does not exist, null will be returned
+		// player document is _before_ the modification, so can be used to
+		// determine if the resynchronization is permitted
+		let result = await this.db.triggerResynchronizationForPlayer(playerId);
+
+		if (result && result.value)
 		{
-			const documents = await this.db.getPlayers({ $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]});
-			console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
-
-			documents.forEach(function(doc, index) {
-				q.push(refreshPlayer(doc._id));
-			});
-
-			q.on('success', function() {
-				// console.log("Job completed.");
-			});
-
-			q.on('end', function() {
-				console.log("All jobs completed.");
-			});
-
-			q.start();
+			if (canResynchronize(result.value))
+			{
+				this.queue.push(taskFactory(playerId, this.db, this.steam));
+			}
+			else
+			{
+				throw new Error("Cannot resynchronize player '" + playerId + "' right now");
+			}
 		}
-		catch (exception)
+		else
 		{
-			console.error(exception);
+			throw new Error("Player '" + playerId + "' does not exist");
 		}
 	}
 
-	async registerGame(playerId, game)
+	// fetch schema for recently registered games or games flagged as requiring an update
+	// resynchronize global achievements for a game if it has not been updated in a week or has been flagged
+	resynchronizeGames()
+	{
+		return new Promise((resolve, reject) => {
+			resolve();
+		});
+	}
+
+	async _registerGame(playerId, game)
 	{
 		// get the achievements for the new game
 		// FIXME the database might already have this game, perhaps it would be better to
@@ -92,7 +236,7 @@ module.exports = class Service {
 		}
 	}
 
-	async updateRegisteredGame(playerId, game)
+	async _updateRegisteredGame(playerId, game)
 	{
 		await this.db.updateGamePlaytime(game.appid, playerId, game.playtime_forever, game.playtime_2weeks);
 
@@ -100,7 +244,7 @@ module.exports = class Service {
 		await this.updatePlayerAchievementsForGame(playerId, game.appid);
 	}
 
-	async updateGlobalAchievementsForGame(gameId)
+	async _updateGlobalAchievementsForGame(gameId)
 	{
 		const achievements = await this.steam.getGlobalAchievementPercentagesForGame(gameId);
 
@@ -117,7 +261,7 @@ module.exports = class Service {
 		}
 	}
 
-	async updatePlayerAchievementsForGame(playerId, gameId)
+	async _updatePlayerAchievementsForGame(playerId, gameId)
 	{
 		const achievements = await this.steam.getPlayerAchievementsForGame(playerId, gameId);
 
@@ -149,7 +293,7 @@ module.exports = class Service {
 		}
 	}
 
-	async refreshPlayer(playerId)
+	async _refreshPlayer(playerId)
 	{
 		try
 		{

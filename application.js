@@ -9,6 +9,10 @@ const config = require('./config.json');
 const db = new Database(config.database.name);
 const steam = new Steam(config.steamAPIKey);
 
+process.on('unhandledRejection', (reason, p) => {
+	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+});
+
 db.connect(config.database)
 .then(function() {
 	return db.initialize();
@@ -25,7 +29,10 @@ db.connect(config.database)
 
 		if (message.registered)
 		{
-			service.refreshPlayer(message.registered);
+			service.resynchronizePlayer(message.registered)
+			.catch(function(err) {
+				console.error(err);
+			});
 		}
 	});
 
