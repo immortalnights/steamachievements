@@ -12,11 +12,21 @@ nav {
 
 main {
 	flex: 1 0 auto;
+	color: #607d8b;
+}
+
+.brand-logo {
+	white-space: nowrap;
 }
 
 .page-footer {
 	background-color: #212121;
 	font-size: 0.8em;
+	padding-top: 10px;
+}
+
+.page-footer .row {
+	margin-bottom: 10px;
 }
 
 .page-footer p {
@@ -26,6 +36,26 @@ main {
 
 .page-footer .footer-copyright {
 	background-color: #131212;
+	padding: 8px 0;
+	min-height: 0px;
+}
+
+.profile-header {
+	margin-top: 5px;
+}
+
+.player-avatar {
+	background-color: #000;
+}
+
+.persona-name {
+	margin-top: 2px;
+	white-space: nowrap;
+}
+
+.private-profile-error {
+	color: #a94847;
+	font-size: 17px;
 }
 
 .summary-statistics {
@@ -65,4 +95,23 @@ ul.game-list {
 .achievement-icon {
 	-webkit-filter: grayscale(100%);
 	filter: grayscale(100%);
+}
+
+/* alert */
+.alert {
+	padding: 10px;
+	border-radius: 4px;
+	border-style: solid;
+	border-width: 1px;
+}
+
+.alert-danger {
+	border-color: #ef9a9a;
+	color: #e53935;
+	background-color: #ffcdd2;
+}
+
+.alert p {
+	padding: 0;
+	margin: 0;
 }

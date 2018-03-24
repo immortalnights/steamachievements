@@ -3,6 +3,7 @@ define(function(require) {
 	var Form = require('core/form');
 	var PlayerProfile = require('player/player');
 	var formTemplate = require('tpl!index/templates/form.html');
+	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	return Marionette.AppRouter.extend({
 		routes: {
@@ -95,9 +96,7 @@ define(function(require) {
 		{
 			if (!id)
 			{
-				this.getApp().showScreen(new Marionette.View({
-					template: _.template('<%- tr("Missing player id.") %>')
-				}));
+				this.navigate('/', true);
 			}
 			else
 			{
@@ -117,7 +116,9 @@ define(function(require) {
 
 				this.listenToOnce(player, 'error', function(model, response, options) {
 					this.getApp().showScreen(new Marionette.View({
-						template: _.template("error")
+						class: 'page-error',
+						template: errorTemplate,
+						model: new Backbone.Model(response)
 					}));
 				});
 

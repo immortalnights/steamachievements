@@ -1,18 +1,19 @@
-<div class="row">
-	<div class="col s4 m3">
-		<div class="card z-depth-3">
+<div class="profile-header row">
+	<div class="col s3 m2">
+		<div class="card player-avatar z-depth-3">
 			<div class="card-image">
 				<img src="<%- steam.avatarfull %>">
 			</div>
 		</div>
 		<div></a></div>
 	</div>
-	<div class="col s8 m9">
-		<h3 style="margin-top: 0;" class="blue-grey-text lighten-5">
+	<div class="col s9 m10">
+		<h4 class="persona-name blue-grey-text lighten-5">
 			<%- steam.personaname %>
 			<a href="<%- steam.profileurl %>" title="<%- tr('View on Steam') %>" target="_blank"><i class="material-icons green-text">link</i></a>
-		</h3>
+		</h4>
 		<div id="gamesummary" class="blue-grey-text lighten-5">
+			<%- tr("Loading profile information, please wait...") %>
 			<div class="progress">
 				<div class="indeterminate"></div>
 			</div>
@@ -20,84 +21,4 @@
 	</div>
 </div>
 
-<div class="blue-grey-text">
-	<div>
-		<h5><%- tr("Almost There") %> <small class="blue-grey-text text-darken-2"><%- tr("Games with the hightest completion percentage.") %></small></h5>
-		<div id="highestcompletiongames">
-			<div class="center-align">
-				<div class="preloader-wrapper small active">
-					<div class="spinner-layer spinner-blue-only">
-						<div class="circle-clipper left">
-							<div class="circle"></div>
-						</div><div class="gap-patch">
-							<div class="circle"></div>
-						</div><div class="circle-clipper right">
-							<div class="circle"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- <p class="view-more-link-container"><a href="#/player/<%- id %>/games"><%- tr("View more...") %></a></p> -->
-	</div>
-
-	<div>
-		<h5><%- tr("Just Started") %> <small class="blue-grey-text text-darken-2"><%- tr("Games with the hightest completion percentage.") %></small></h5>
-		<div id="lowestcompetiongames">
-			<div class="center-align">
-				<div class="preloader-wrapper small active">
-					<div class="spinner-layer spinner-blue-only">
-						<div class="circle-clipper left">
-							<div class="circle"></div>
-						</div><div class="gap-patch">
-							<div class="circle"></div>
-						</div><div class="circle-clipper right">
-							<div class="circle"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- <p class="view-more-link-container"><a href="#/player/<%- id %>/games"><%- tr("View more...") %></a></p> -->
-	</div>
-
-	<div>
-		<h5><%- tr("Next Game") %> <small class="blue-grey-text text-darken-2"><%- tr("Games with the hightest global completion percentage.") %></small></h5>
-		<div id="easiestgames">
-			<div class="center-align">
-				<div class="preloader-wrapper small active">
-					<div class="spinner-layer spinner-blue-only">
-						<div class="circle-clipper left">
-							<div class="circle"></div>
-						</div><div class="gap-patch">
-							<div class="circle"></div>
-						</div><div class="circle-clipper right">
-							<div class="circle"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- <p class="view-more-link-container"><a href="#/player/<%- id %>/games"><%- tr("View more...") %></a></p> -->
-	</div>
-
-	<div>
-		<h5><%- tr("Next Achievement") %> <small class="blue-grey-text text-darken-2"><%- tr("Achievements with the hightest global completion percentage") %></small></h5>
-		<div id="easiestachievements">
-			<div class="center-align">
-				<div class="preloader-wrapper small active">
-					<div class="spinner-layer spinner-blue-only">
-						<div class="circle-clipper left">
-							<div class="circle"></div>
-						</div><div class="gap-patch">
-							<div class="circle"></div>
-						</div><div class="circle-clipper right">
-							<div class="circle"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- <p class="view-more-link-container"><a href="#/player/<%- id %>/achievements"><%- tr("View more...") %></a></p> -->
-	</div>
-</div>
+<div id="gamelists"></div>

@@ -4,14 +4,12 @@ const debug = require('debug')('service');
 const _ = require('underscore');
 const moment = require('moment');
 const Queue = require('queue');
-const Player = require('./player');
+const Player = require('./lib/player');
 
-
-// 
+//
 const SCHEDULE = 10 * 1000;
 
 const taskFactory = function(playerId, database, steam) {
-	console.log("build task")
 	return function() {
 		return new Promise(function(resolve, reject) {
 			const player = new Player(playerId, database, steam);
@@ -35,7 +33,7 @@ const canResynchronize = function(doc) {
 
 	if (_.isObject(doc))
 	{
-		if (!doc.resynchronized)
+		if (!doc.resynchronized || doc.resynchronized === 'never' || doc.resynchronized === 'pending')
 		{
 			result = true;
 			console.log("player", doc._id, "has never been resynchronized");
@@ -62,13 +60,14 @@ module.exports = class Service {
 
 		this.db = db;
 		this.steam = steam;
+
+		this.triggeredResynchronizations = {};
 	}
 
 	run()
 	{
 		(async () => {
 			console.log("executing start up tasks")
-			await this.db.resetPendingResynchronizations();
 		})();
 
 		const scheduleTask = async function() {
@@ -76,24 +75,18 @@ module.exports = class Service {
 
 			try
 			{
-				await this.resynchronizePlayers()
-				.catch(function() {});
+				// await this.resynchronizePlayers()
+				// .catch(function() {});
 
-				await this.resynchronizeGames();
+				// await this.resynchronizeGames();
 			}
 			catch (exception)
 			{
-				console.error(exception);
+				console.error("failed to execute schedule tasks", exception);
 			}
 
 			setTimeout(scheduleTask.bind(this), SCHEDULE);
 		};
-
-		// setTimeout(() => {
-		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
-		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
-		// 	this.resynchronizePlayer('76561197993451745').catch(function() {});
-		// }, 5000);
 
 		scheduleTask.call(this);
 	}
@@ -107,16 +100,13 @@ module.exports = class Service {
 
 			try
 			{
-				const documents = await this.db.getPlayers(/*{ $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]}*/);
+				const documents = await this.db.getPlayers(/*{ 'steam.communityvisibilitystate': 3, $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]}*/);
 
 				console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
 
-				let starting = [];
 				documents.forEach((doc, index) => {
-					starting.push(this.queuePlayerResynchronization(doc._id));
+					this.queue.push(taskFactory(doc._id, this.db, this.steam));
 				});
-
-				console.log("ok")
 
 				// start the queue, resolve the promise once completed
 				console.log("start processing queue", this.queue.length);
@@ -124,7 +114,7 @@ module.exports = class Service {
 					console.log("queue completed");
 
 					// FIXME this  will not trigger if players continue to trigger resynchronizations, which could mean,
-					// under a high load, or malicious users, continue triggers would prevent the automatic resynchronization
+					// under a high load, or due to  malicious users, continuous triggers would prevent the automatic resynchronization
 					// of other players
 					resolve();
 				});
@@ -141,49 +131,59 @@ module.exports = class Service {
 	resynchronizePlayer(playerId)
 	{
 		return new Promise((resolve, reject) => {
-			try
+			if (this.triggeredResynchronizations[playerId])
 			{
-				this.queuePlayerResynchronization(playerId);
-
-				// start the queue, (no effect if already running)
-				console.log("start processing queue");
-				this.queue.start(() => {
-					console.log("individual resynchronization completed", playerId);
-					resolve();
-				});
+				throw new Error("Resynchronization for '" + playerId + "' is already in progress");
 			}
-			catch (err)
+			else
 			{
-				console.log("failed", err);
-				reject(err);
+				if (this.checkPlayer(playerId))
+				{
+					this.triggeredResynchronizations[playerId] = true;
+
+					this.queue.push(() => {
+						// verify the player can be resynchronized again as they may have already been resynchronized
+						// earlier in the queue.
+						// try
+						// {
+							if (this.checkPlayer(playerId))
+							{
+								// exec factory to get task promise
+								return taskFactory(playerId, this.db, this.steam)();
+							}
+						// }
+						// catch (err)
+						// {
+						// 	return err;
+						// }
+					});
+					// start the queue, (no effect if already running)
+					console.log("start processing queue");
+					this.queue.start(() => {
+						console.log("individual resynchronization completed", playerId);
+						delete this.triggeredResynchronizations[playerId];
+
+						resolve();
+					});
+				}
 			}
 		});
 	}
 
-	// @private
-	async queuePlayerResynchronization(playerId)
+	async checkPlayer(playerId)
 	{
-		// find and update the player record.
-		// if the player does not exist, null will be returned
-		// player document is _before_ the modification, so can be used to
-		// determine if the resynchronization is permitted
-		let result = await this.db.triggerResynchronizationForPlayer(playerId);
+		let doc = await this.db.getPlayers({ _id: playerId });
 
-		if (result && result.value)
-		{
-			if (canResynchronize(result.value))
-			{
-				this.queue.push(taskFactory(playerId, this.db, this.steam));
-			}
-			else
-			{
-				throw new Error("Cannot resynchronize player '" + playerId + "' right now");
-			}
-		}
-		else
+		if (doc.length !== 1)
 		{
 			throw new Error("Player '" + playerId + "' does not exist");
 		}
+		else if (!canResynchronize(doc[0]))
+		{
+			throw new Error("Cannot resynchronize player '" + playerId + "' right now");
+		}
+
+		return true;
 	}
 
 	// fetch schema for recently registered games or games flagged as requiring an update
@@ -236,14 +236,6 @@ module.exports = class Service {
 		}
 	}
 
-	async _updateRegisteredGame(playerId, game)
-	{
-		await this.db.updateGamePlaytime(game.appid, playerId, game.playtime_forever, game.playtime_2weeks);
-
-		// Update player achievements for this game
-		await this.updatePlayerAchievementsForGame(playerId, game.appid);
-	}
-
 	async _updateGlobalAchievementsForGame(gameId)
 	{
 		const achievements = await this.steam.getGlobalAchievementPercentagesForGame(gameId);
@@ -258,109 +250,6 @@ module.exports = class Service {
 			await Promise.all(updates);
 
 			await this.db.setGameResynchronizationTime(gameId);
-		}
-	}
-
-	async _updatePlayerAchievementsForGame(playerId, gameId)
-	{
-		const achievements = await this.steam.getPlayerAchievementsForGame(playerId, gameId);
-
-		if (!_.isEmpty(achievements))
-		{
-			let updates = [];
-			_.each(achievements, (achievement) => {
-				if (achievement.achieved)
-				{
-					const unlocktime = achievement.unlocktime || true;
-					updates.push(this.db.setGameAchievementAchieved(gameId, playerId, achievement.apiname, unlocktime));
-				}
-			});
-
-			const perfect = _.every(achievements, function(achievement) {
-				return achievement.achieved;
-			});
-
-			console.log("player has unlocked another", updates.length, "achievement(s)");
-			await Promise.all(updates);
-
-			if (perfect)
-			{
-				console.log("setting perfect game", gameId, playerId);
-				await this.db.setPerfectGame(gameId, playerId);
-			}
-
-			// await this.db.setGameResynchronizationTime(gameId);
-		}
-	}
-
-	async _refreshPlayer(playerId)
-	{
-		try
-		{
-			const summary = await this.steam.getSummary(playerId);
-			debug("player summary", summary);
-
-			// use the database id property
-			delete summary.steamid;
-
-			console.log("updating player %s (%s)", summary.personaname, playerId);
-			await this.db.updatePlayer(playerId, {
-				// resynchronized: new Date(),
-				steam: summary
-			});
-
-			let [ownedGames, registeredGames] = await Promise.all([ this.steam.getOwnedGames(playerId), this.db.getPlayerGames(playerId, { sort: '_id' }) ]);
-
-			// order owned games (from steam) by app id
-			// ownedGames = _.sortBy(ownedGames, 'appid' );
-
-			// index owned and registered games
-			const indexedOwnedGames = _.indexBy(ownedGames, 'appid');
-			const indexedRegisteredGames = _.indexBy(registeredGames, '_id');
-
-			// console.log("ownedGames=", ownedGames[0]);
-			// console.log("registeredGames=", registeredGames[0]);
-
-			// Identify new or played games by iterating over the steam result set
-			_.each(ownedGames, (ownedGame, index) => {
-				// find the appropriate game from the database set (if it exists)
-				const registeredGame = indexedRegisteredGames[ownedGame.appid];
-
-				if (!registeredGame)
-				{
-					// game is not registered for any players
-					console.log("%s (%s) has new game '%s' (%i)", summary.personaname, playerId, ownedGame.name, ownedGame.appid);
-
-					this.registerGame(playerId, ownedGame);
-				}
-				else
-				{
-					// get player owner information
-					const registeredOwner = _.findWhere(registeredGame.owners, { playerId: playerId });
-
-					if (!registeredOwner)
-					{
-						console.error("Failed to find registered owner in registered game data", playerId, registeredGame.owners);
-					}
-					else if (ownedGame.playtime_forever !== registeredOwner.playtime_forever)
-					{
-						// game has been played by this player
-						console.log("%s (%s) has played '%s' (%i)", summary.personaname, playerId, ownedGame.name, ownedGame.appid);
-
-						this.updateRegisteredGame(playerId, ownedGame);
-					}
-					else
-					{
-						// not played, skip
-					}
-				}
-			});
-
-			console.log("Done processing games");
-		}
-		catch (exception)
-		{
-			console.error("Failed to refresh player", exception);
 		}
 	}
 }

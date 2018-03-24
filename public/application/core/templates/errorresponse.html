@@ -1,0 +1,13 @@
+<p>
+	<% if (obj.status) { %>
+		<% if (!_.isEmpty(obj.responseJSON)) { %>
+			<%- status %> <%- responseJSON.error %>
+		<% } else { %>
+			<%- status %> <%- statusText %>
+		<% } %>
+
+		<a href="javascript:history.back()"><%- tr("Try going back") %></a>
+	<% } else { %>
+		<%- tr("Invalid response. Please refresh and try again.") %>
+	<% } %>
+</p>
