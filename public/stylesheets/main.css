@@ -15,6 +15,12 @@ main {
 	color: #607d8b;
 }
 
+/* overrides */
+/* return button icon size to default */
+.btn-flat i {
+	font-size: 24px;
+}
+
 .brand-logo {
 	white-space: nowrap;
 }
@@ -49,8 +55,8 @@ main {
 }
 
 .persona-name {
-	margin-top: 2px;
 	white-space: nowrap;
+	margin: 2px 0 0;
 }
 
 .private-profile-error {
@@ -62,6 +68,10 @@ main {
 	color: #fff;
 	font-weight: 200;
 	font-family: 'Motiva Sans';
+}
+
+.summary-statistics .row {
+	margin-bottom: 0;
 }
 
 .summary-statistics .value{

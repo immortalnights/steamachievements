@@ -1,6 +1,7 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
-	var playerTemplate = require('tpl!player/templates/layout.html');
+	var GameLists = require('player/gamelists');
+	var template = require('tpl!player/templates/layout.html');
 	var summaryTemplate = require('tpl!player/templates/summary.html');
 	var privateProfileTemplate = require('tpl!player/templates/privateprofile.html');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
@@ -10,18 +11,21 @@ define(function(require) {
 	});
 
 	return Marionette.View.extend({
-		template: playerTemplate,
+		template: template,
 
 		regions: {
 			gameSummaryLocation: '#gamesummary',
+			gameListsLocations: '#gamelists'
 		},
 
 		events: {
-			'click a[data-control=reload]': 'onReloadProfile'
+			'click a[data-control=reload]': 'onReloadProfile',
+			'click button[data-control=resynchronize]': 'onResynchronizeProfile'
 		},
 
 		initialize: function(options)
 		{
+			Marionette.View.prototype.initialize.call(this, options);
 			document.title = this.model.get('steam').personaname + ' - Achievement Chaser';
 		},
 
@@ -90,7 +94,9 @@ define(function(require) {
 
 				this.listenToOnce(summary, 'sync', this.stopListening);
 
-				this.renderLists();
+				this.showChildView('gameListsLocations', new GameLists({
+					model: this.model
+				}));
 
 				summary.fetch();
 			}
@@ -99,6 +105,18 @@ define(function(require) {
 		onReloadProfile: function(event)
 		{
 			event.preventDefault();
+		},
+
+		onResynchronizeProfile: function(event)
+		{
+			event.preventDefault();
+
+			Backbone.ajax({
+				url: '/api/Players/' + this.model.id + '/Resynchronize/invoke/',
+				method: 'put',
+				data: JSON.stringify({}),
+				contentType: 'application/json'
+			});
 		}
 	});
 });

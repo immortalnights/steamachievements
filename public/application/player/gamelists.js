@@ -1,12 +1,13 @@
-
+define(function(require) {
 	var Marionette = require('backbone.marionette');
 	var PlayerGames = require('collections/playergames');
 	var PlayerAchievements = require('collections/playerachievements');
+	var template = require('tpl!player/templates/lists.html');
 	var gameTemplate = require('tpl!player/templates/game.html');
 	var achievementTemplate = require('tpl!player/templates/achievement.html');
 
 	return Marionette.View.extend({
-		template: playerTemplate,
+		template: template,
 
 		regions: {
 			gameSummaryLocation: '#gamesummary',
@@ -18,12 +19,10 @@
 
 		initialize: function(options)
 		{
-			console.log(this.model);
-
-			document.title = this.model.get('steam').personaname + ' - Achievement Chaser';
+			Marionette.View.prototype.initialize.call(this, options);
 		},
 
-		renderLists: function()
+		onRender: function()
 		{
 			var List = Marionette.NextCollectionView.extend({
 				tagName: 'ul',
@@ -32,6 +31,10 @@
 				childViewOptions: {
 					tagName: 'li',
 					template: gameTemplate
+				},
+				emptyView: Marionette.View,
+				emptyViewOptions: {
+					template: _.template('<%- tr("No games to display.") %>')
 				}
 			});
 
@@ -67,3 +70,5 @@
 			}));
 			easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 		}
+	});
+});

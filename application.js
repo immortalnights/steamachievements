@@ -34,6 +34,13 @@ db.connect(config.database)
 				console.error(err);
 			});
 		}
+		else if (message.resynchronize)
+		{
+			service.resynchronizePlayer(message.resynchronize)
+			.catch(function(err) {
+				console.error(err);
+			});
+		}
 	});
 
 	// start the service

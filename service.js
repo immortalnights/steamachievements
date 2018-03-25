@@ -5,11 +5,12 @@ const _ = require('underscore');
 const moment = require('moment');
 const Queue = require('queue');
 const Player = require('./lib/player');
+const Game = require('./lib/game');
 
 //
 const SCHEDULE = 10 * 1000;
 
-const taskFactory = function(playerId, database, steam) {
+const resynchronizePlayerFactory = function(playerId, database, steam) {
 	return function() {
 		return new Promise(function(resolve, reject) {
 			const player = new Player(playerId, database, steam);
@@ -75,10 +76,11 @@ module.exports = class Service {
 
 			try
 			{
-				// await this.resynchronizePlayers()
-				// .catch(function() {});
+				await this.resynchronizePlayers()
+				.catch(function() {});
 
-				// await this.resynchronizeGames();
+				await this.resynchronizeGames()
+				.catch(function() {});
 			}
 			catch (exception)
 			{
@@ -100,12 +102,11 @@ module.exports = class Service {
 
 			try
 			{
-				const documents = await this.db.getPlayers(/*{ 'steam.communityvisibilitystate': 3, $or: [ { resynchronized: { "$lt": yesterday.toDate() } } ]}*/);
-
-				console.log("found %i profile(s) which requires updating", documents.length, _.pluck(documents, '_id'));
+				const documents = await this.db.getPlayers({ 'steam.communityvisibilitystate': 3, resynchronized: { "$lt": yesterday.toDate() }});
+				console.log("found %i player(s) which requires updating", documents.length);
 
 				documents.forEach((doc, index) => {
-					this.queue.push(taskFactory(doc._id, this.db, this.steam));
+					this.queue.push(resynchronizePlayerFactory(doc._id, this.db, this.steam));
 				});
 
 				// start the queue, resolve the promise once completed
@@ -121,7 +122,7 @@ module.exports = class Service {
 			}
 			catch (exception)
 			{
-				console.log("failed to resynchronize players", exception);
+				console.error("failed to resynchronize players", exception);
 				reject(exception);
 			}
 		});
@@ -137,26 +138,21 @@ module.exports = class Service {
 			}
 			else
 			{
-				if (this.checkPlayer(playerId))
-				{
+				this.checkPlayer(playerId)
+				.then(() => {
 					this.triggeredResynchronizations[playerId] = true;
 
 					this.queue.push(() => {
 						// verify the player can be resynchronized again as they may have already been resynchronized
 						// earlier in the queue.
-						// try
-						// {
-							if (this.checkPlayer(playerId))
-							{
-								// exec factory to get task promise
-								return taskFactory(playerId, this.db, this.steam)();
-							}
-						// }
-						// catch (err)
-						// {
-						// 	return err;
-						// }
+						this.checkPlayer(playerId)
+						.then(() => {
+							// exec factory to get task promise
+							return resynchronizePlayerFactory(playerId, this.db, this.steam)();
+						})
+						.catch(reject);
 					});
+
 					// start the queue, (no effect if already running)
 					console.log("start processing queue");
 					this.queue.start(() => {
@@ -165,7 +161,8 @@ module.exports = class Service {
 
 						resolve();
 					});
-				}
+				})
+				.catch(reject);
 			}
 		});
 	}
@@ -190,66 +187,71 @@ module.exports = class Service {
 	// resynchronize global achievements for a game if it has not been updated in a week or has been flagged
 	resynchronizeGames()
 	{
-		return new Promise((resolve, reject) => {
-			resolve();
-		});
-	}
+		const resynchronizeGameFactory = function(id, db, steam) {
+			return function() {
+				return new Promise(function(resolve, reject) {
+					try
+					{
+						const game = new Game(id, db, steam);
 
-	async _registerGame(playerId, game)
-	{
-		// get the achievements for the new game
-		// FIXME the database might already have this game, perhaps it would be better to
-		// check before loading the schema from Steam.
-		let schema = await this.steam.getSchemaForGame(game.appid)
-		.catch(function(err) {
-			console.error("Failed to get schema for game", game.appid);
-		});
-
-		schema = schema || {};
-
-		if (schema.availableGameStats)
-		{
-			schema = schema.availableGameStats;
+						game.run()
+						.then(function(game) {
+							// Note game name within the Schema is unreliable
+							console.log("completed resynchronization of '%s' (%i)", game.name, game.id)
+							resolve(id);
+						})
+						.catch(function(err) {
+							console.error("failed to resynchronize game", id);
+							console.error(err);
+							reject(err);
+						});
+					}
+					catch (err)
+					{
+						console.log("err")
+						reject(err);
+					}
+				});
+			};
 		}
-		else
-		{
-			schema.achievements = false;
-		}
 
-		const result = await this.db.registerGame(playerId, game, schema);
-		console.log("registered game", game.appid);
-
-		// update game achievements, if applicable
-		if (!_.isEmpty(schema.achievements))
-		{
-			// If the result is null, the game was not previously registered and the achievement schema will be required
-			if (!result.value)
-			{
-				// Game did not exist, player and global achievements required
-				await this.updateGlobalAchievementsForGame(game.appid);
-			}
-
-			if (game.playtime_forever)
-			{
-				await this.updatePlayerAchievementsForGame(playerId, game.appid);
-			}
-		}
-	}
-
-	async _updateGlobalAchievementsForGame(gameId)
-	{
-		const achievements = await this.steam.getGlobalAchievementPercentagesForGame(gameId);
-
-		if (!_.isEmpty(achievements))
-		{
-			let updates = [];
-			_.each(achievements, (achievement) => {
-				updates.push(this.db.setGameAchievementGlobalPercent(gameId, achievement.name, achievement.percent));
+		return new Promise(async (resolve, reject) => {
+			const queue = new Queue({
+				concurrency: 3
 			});
+			const weekAgo = moment().add(-7, 'days');
 
-			await Promise.all(updates);
+			try
+			{
+				const documents = await this.db.getGames({
+					achievements: { $type: 'array' },
+					$or: [{
+						resynchronized: 'never'
+					}, {
+						resynchronized: { "$lt": weekAgo.toDate() }
+					}]
+				});
+				console.log("found %i game(s) which requires updating", documents.length);
 
-			await this.db.setGameResynchronizationTime(gameId);
-		}
+				documents.forEach((doc, index) => {
+					queue.push(resynchronizeGameFactory(doc._id, this.db, this.steam));
+				});
+
+				queue.on('error', function(err, task) {
+					console.error("Game resynchronization failed", err);
+				});
+
+				console.log("start processing game queue", queue.length);
+				queue.start(function() {
+					console.log("game queue completed");
+					resolve();
+				});
+			}
+			catch (err) 
+			{
+				console.error("failed to resynchronize players", exception);
+				reject(exception);
+			}
+		});
 	}
 }
