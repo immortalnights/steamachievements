@@ -68,11 +68,7 @@ define(function(require) {
 					className: 'col s6',
 				}, List.prototype.childViewOptions)
 			}));
-
-			_.defer(function() {
-
-				easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
-			});
+			easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 		}
 	});
 });
