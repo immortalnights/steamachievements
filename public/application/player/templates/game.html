@@ -1,4 +1,4 @@
-<a href="http://store.steampowered.com/app/<%- obj.appid || obj._id %>">
+<a href="http://store.steampowered.com/app/<%- obj.appid || obj._id %>" target="_blank">
 	<% if (obj.percentage) { %>
 		<span title="<%- name %> - <%- unlocked %> of <%- total %> (<%- percentage.toFixed(1) %>%)">
 	<% } else if (obj.lowestGlobalPercentage) { %>

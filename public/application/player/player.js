@@ -59,7 +59,7 @@ define(function(require) {
 				setTimeout(function() {
 					self.model.fetch()
 					.then(function() {
-						self.renderPublicProfile();
+						self.render();
 					})
 					.fail(function(response, statusText, errorString) {
 						self.showChildView('gameSummaryLocation', new Marionette.View({

@@ -3,7 +3,7 @@
 </a>
 
 <% _.each(achievements.reverse(), function(achievement) { %>
-	<a href="http://store.steampowered.com/stats/<%- obj.appid || obj._id %>/achievements">
+	<a href="http://store.steampowered.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank">
 		<img class="achievement-icon" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
 	</a>
 <% }); %>

@@ -22,3 +22,11 @@
 </div>
 
 <div id="gamelists"></div>
+
+<% if (resynchronized === 'never') { %>
+
+<% } else { %>
+	<p class="right-align" title="<%- moment(resynchronized).format('MMMM Do YYYY, hh:mm:ss A') %>">
+		<small><%- tr("Last resynchronized: ") %> <%- moment(resynchronized).fromNow() %></small>
+	</p>
+<% } %>

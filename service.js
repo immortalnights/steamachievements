@@ -44,8 +44,10 @@ const canResynchronize = function(doc) {
 			const twoHoursAgo = moment().add(-2, 'hours');
 			const lastResynchronized = moment(doc.resynchronized);
 
-			result = (doc.state === 'ok' && lastResynchronized > twoHoursAgo);
+			result = (doc.state === 'ok' && lastResynchronized < twoHoursAgo);
 			console.log("player", doc._id, "last resynchronized", String(lastResynchronized), "(", String(twoHoursAgo), ")", result);
+
+			result = true;
 		}
 	}
 
@@ -56,7 +58,19 @@ module.exports = class Service {
 	constructor(db, steam)
 	{
 		this.queue = new Queue({
-			concurrency: 3
+			concurrency: 3,
+			// timeout: 5000,
+		});
+
+		this.queue.on('success', function() {
+			console.log("job completed");
+		});
+		this.queue.on('end', function() {
+			console.log("queue completed");
+		});
+		this.queue.on('timeout', function(next, job) {
+			console.log("job timeout");
+			next();
 		});
 
 		this.db = db;
@@ -76,15 +90,12 @@ module.exports = class Service {
 
 			try
 			{
-				await this.resynchronizePlayers()
-				.catch(function() {});
-
-				await this.resynchronizeGames()
-				.catch(function() {});
+				// await this.resynchronizePlayers();
+				// await this.resynchronizeGames();
 			}
-			catch (exception)
+			catch (err)
 			{
-				console.error("failed to execute schedule tasks", exception);
+				console.error("Failed to execute schedule tasks", err);
 			}
 
 			setTimeout(scheduleTask.bind(this), SCHEDULE);
@@ -98,10 +109,9 @@ module.exports = class Service {
 	resynchronizePlayers()
 	{
 		return new Promise(async (resolve, reject) => {
-			const yesterday = moment().add(-1, 'days');
-
 			try
 			{
+				const yesterday = moment().add(-1, 'days');
 				const documents = await this.db.getPlayers({ 'steam.communityvisibilitystate': 3, resynchronized: { "$lt": yesterday.toDate() }});
 				console.log("found %i player(s) which requires updating", documents.length);
 
@@ -110,7 +120,7 @@ module.exports = class Service {
 				});
 
 				// start the queue, resolve the promise once completed
-				console.log("start processing queue", this.queue.length);
+				// console.log("start processing queue", this.queue.length);
 				this.queue.start(function() {
 					console.log("queue completed");
 
@@ -120,10 +130,10 @@ module.exports = class Service {
 					resolve();
 				});
 			}
-			catch (exception)
+			catch (err)
 			{
-				console.error("failed to resynchronize players", exception);
-				reject(exception);
+				console.error("Failed to resynchronize players", err);
+				reject(err);
 			}
 		});
 	}
@@ -131,27 +141,45 @@ module.exports = class Service {
 	// resynchronize a single player, starts processing the queue immediately
 	resynchronizePlayer(playerId)
 	{
-		return new Promise((resolve, reject) => {
-			if (this.triggeredResynchronizations[playerId])
-			{
-				throw new Error("Resynchronization for '" + playerId + "' is already in progress");
-			}
-			else
-			{
-				this.checkPlayer(playerId)
-				.then(() => {
-					this.triggeredResynchronizations[playerId] = true;
-
-					this.queue.push(() => {
+		const resynchronizePlayerFactory2 = function(id, db, steam) {
+			return () => {
+				return new Promise(async (resolve, reject) => {
+					try
+					{
 						// verify the player can be resynchronized again as they may have already been resynchronized
 						// earlier in the queue.
-						this.checkPlayer(playerId)
-						.then(() => {
-							// exec factory to get task promise
-							return resynchronizePlayerFactory(playerId, this.db, this.steam)();
-						})
-						.catch(reject);
-					});
+						await this.checkPlayer(playerId);
+
+						// exec factory to get task promise
+						await resynchronizePlayerFactory(playerId, this.db, this.steam)();
+
+						resolve(playerId);
+					}
+					catch (err)
+					{
+						console.log("Failed to begin player resyncrhonization", playerId);
+						console.error(err);
+						reject(err);
+					}
+				});
+			}
+		}
+
+		return new Promise(async (resolve, reject) => {
+			try
+			{
+				if (this.triggeredResynchronizations[playerId])
+				{
+					reject(new Error("Resynchronization for '" + playerId + "' is already in progress"));
+				}
+				else
+				{
+					await this.checkPlayer(playerId);
+
+					// make the player as being resynchronized
+					this.triggeredResynchronizations[playerId] = true;
+
+					this.queue.push(resynchronizePlayerFactory2.call(this, playerId, this.db, this.steam));
 
 					// start the queue, (no effect if already running)
 					console.log("start processing queue");
@@ -161,8 +189,12 @@ module.exports = class Service {
 
 						resolve();
 					});
-				})
-				.catch(reject);
+				}
+			}
+			catch (err)
+			{
+				console.error("Failed to resynchronize player", playerId, err);
+				reject(err);
 			}
 		});
 	}
@@ -241,7 +273,7 @@ module.exports = class Service {
 					console.error("Game resynchronization failed", err);
 				});
 
-				console.log("start processing game queue", queue.length);
+				// console.log("start processing game queue", queue.length);
 				queue.start(function() {
 					console.log("game queue completed");
 					resolve();
