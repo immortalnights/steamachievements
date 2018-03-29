@@ -29,17 +29,11 @@ db.connect(config.database)
 
 		if (message.registered)
 		{
-			service.resynchronizePlayer(message.registered)
-			.catch(function(err) {
-				console.error(err);
-			});
+			service.resynchronizePlayer(message.registered);
 		}
 		else if (message.resynchronize)
 		{
-			service.resynchronizePlayer(message.resynchronize)
-			.catch(function(err) {
-				console.error(err);
-			});
+			service.resynchronizePlayer(message.resynchronize);
 		}
 	});
 

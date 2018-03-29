@@ -57,24 +57,21 @@ const canResynchronize = function(doc) {
 module.exports = class Service {
 	constructor(db, steam)
 	{
-		this.queue = new Queue({
-			concurrency: 3,
-			// timeout: 5000,
-		});
-
-		this.queue.on('success', function() {
-			console.log("job completed");
-		});
-		this.queue.on('end', function() {
-			console.log("queue completed");
-		});
-		this.queue.on('timeout', function(next, job) {
-			console.log("job timeout");
-			next();
-		});
-
 		this.db = db;
 		this.steam = steam;
+
+		this.triggerQueue = new Queue({
+			concurrency: 1
+		});
+
+
+		this.triggerQueue.on('success', (result, job) => {
+			if (this.triggeredResynchronizations[result])
+			{
+				console.log("Individual resynchronization completed", result);
+				delete this.triggeredResynchronizations[result];
+			}
+		});
 
 		this.triggeredResynchronizations = {};
 	}
@@ -90,8 +87,8 @@ module.exports = class Service {
 
 			try
 			{
-				// await this.resynchronizePlayers();
-				// await this.resynchronizeGames();
+				await this.resynchronizePlayers();
+				await this.resynchronizeGames();
 			}
 			catch (err)
 			{
@@ -111,24 +108,29 @@ module.exports = class Service {
 		return new Promise(async (resolve, reject) => {
 			try
 			{
+				let queue = new Queue({
+					concurrency: 3
+				});
+
 				const yesterday = moment().add(-1, 'days');
 				const documents = await this.db.getPlayers({ 'steam.communityvisibilitystate': 3, resynchronized: { "$lt": yesterday.toDate() }});
 				console.log("found %i player(s) which requires updating", documents.length);
 
 				documents.forEach((doc, index) => {
-					this.queue.push(resynchronizePlayerFactory(doc._id, this.db, this.steam));
+					queue.push(resynchronizePlayerFactory(doc._id, this.db, this.steam));
 				});
 
 				// start the queue, resolve the promise once completed
-				// console.log("start processing queue", this.queue.length);
-				this.queue.start(function() {
-					console.log("queue completed");
+				// console.log("start processing queue", queue.length);
 
-					// FIXME this  will not trigger if players continue to trigger resynchronizations, which could mean,
-					// under a high load, or due to  malicious users, continuous triggers would prevent the automatic resynchronization
-					// of other players
+				// Individual resynchronizations will delay the queue completion
+				queue.once('end', function(err) {
+					console.log("Queue completed");
 					resolve();
 				});
+
+				// passing a callback to start will cause the queue to stop on error
+				queue.start();
 			}
 			catch (err)
 			{
@@ -139,7 +141,7 @@ module.exports = class Service {
 	}
 
 	// resynchronize a single player, starts processing the queue immediately
-	resynchronizePlayer(playerId)
+	async resynchronizePlayer(playerId)
 	{
 		const resynchronizePlayerFactory2 = function(id, db, steam) {
 			return () => {
@@ -148,55 +150,47 @@ module.exports = class Service {
 					{
 						// verify the player can be resynchronized again as they may have already been resynchronized
 						// earlier in the queue.
-						await this.checkPlayer(playerId);
+						await this.checkPlayer(id);
 
 						// exec factory to get task promise
-						await resynchronizePlayerFactory(playerId, this.db, this.steam)();
+						await resynchronizePlayerFactory(id, db, steam)();
 
-						resolve(playerId);
+						resolve(id);
 					}
 					catch (err)
 					{
-						console.log("Failed to begin player resyncrhonization", playerId);
+						console.log("Failed to begin player resyncrhonization", id);
 						console.error(err);
-						reject(err);
+						reject(err)
 					}
 				});
 			}
 		}
 
-		return new Promise(async (resolve, reject) => {
-			try
+		try
+		{
+			if (this.triggeredResynchronizations[playerId])
 			{
-				if (this.triggeredResynchronizations[playerId])
-				{
-					reject(new Error("Resynchronization for '" + playerId + "' is already in progress"));
-				}
-				else
-				{
-					await this.checkPlayer(playerId);
-
-					// make the player as being resynchronized
-					this.triggeredResynchronizations[playerId] = true;
-
-					this.queue.push(resynchronizePlayerFactory2.call(this, playerId, this.db, this.steam));
-
-					// start the queue, (no effect if already running)
-					console.log("start processing queue");
-					this.queue.start(() => {
-						console.log("individual resynchronization completed", playerId);
-						delete this.triggeredResynchronizations[playerId];
-
-						resolve();
-					});
-				}
+				throw new Error("Resynchronization for '" + playerId + "' is already in progress");
 			}
-			catch (err)
+			else
 			{
-				console.error("Failed to resynchronize player", playerId, err);
-				reject(err);
+				await this.checkPlayer(playerId);
+
+				// make the player as being resynchronized
+				this.triggeredResynchronizations[playerId] = true;
+
+				this.triggerQueue.push(resynchronizePlayerFactory2.call(this, playerId, this.db, this.steam));
+
+				// start the queue, (no effect if already running)
+				// console.log("Start processing queue");
+				this.triggerQueue.start();
 			}
-		});
+		}
+		catch (err)
+		{
+			console.error("Failed to resynchronize player", playerId, err);
+		}
 	}
 
 	async checkPlayer(playerId)
