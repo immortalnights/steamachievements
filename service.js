@@ -8,7 +8,7 @@ const Player = require('./lib/player');
 const Game = require('./lib/game');
 
 //
-const SCHEDULE = 10 * 1000;
+const SCHEDULE = 60 * 60 * 1000;
 
 const resynchronizePlayerFactory = function(playerId, database, steam) {
 	return function() {
@@ -21,7 +21,7 @@ const resynchronizePlayerFactory = function(playerId, database, steam) {
 				resolve(playerId);
 			})
 			.catch(function(err) {
-				console.error("failed to resynchronize player", playerId);
+				console.error("Failed to resynchronize player", playerId);
 				console.error(err);
 				reject(err);
 			});
@@ -63,7 +63,6 @@ module.exports = class Service {
 		this.triggerQueue = new Queue({
 			concurrency: 1
 		});
-
 
 		this.triggerQueue.on('success', (result, job) => {
 			if (this.triggeredResynchronizations[result])
@@ -151,7 +150,7 @@ module.exports = class Service {
 					.catch(function(err) {
 						console.log("Failed to begin player resyncrhonization", id);
 						console.error(err);
-						reject(err)
+						reject(err);
 					});
 				});
 			}
@@ -266,8 +265,8 @@ module.exports = class Service {
 				});
 			})
 			.catch(function(err) {
-				console.error("failed to resynchronize players", exception);
-				reject(exception);
+				console.error("failed to resynchronize games", err);
+				reject(err);
 			});
 		});
 	}
