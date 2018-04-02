@@ -26,7 +26,7 @@ define(function(require) {
 		initialize: function(options)
 		{
 			Marionette.View.prototype.initialize.call(this, options);
-			document.title = this.model.get('steam').personaname + ' - Achievement Chaser';
+			document.title = this.model.get('personaname') + ' - Achievement Chaser';
 		},
 
 		onRender: function()
