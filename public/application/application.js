@@ -2,6 +2,7 @@ define(function(require) {
 	'use strict';
 	var Marionette = require('backbone.marionette');
 	var Router = require('core/router');
+	var PlayerRouter = require('player/router');
 	var viewmixin = require('core/viewmixin');
 	var translation = require('core/translation');
 	var rootTemplate = require('tpl!core/templates/root.html');
@@ -26,6 +27,7 @@ define(function(require) {
 			// }));
 
 			new Router();
+			new PlayerRouter();
 
 			Backbone.history.start();
 		},

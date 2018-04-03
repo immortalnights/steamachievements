@@ -1,0 +1,22 @@
+<div class="profile-header row">
+	<div class="col s3 m2">
+		<div class="card player-avatar z-depth-3">
+			<div class="card-image">
+				<img src="<%- steam.avatarfull %>">
+			</div>
+		</div>
+	</div>
+	<div class="col s9 m10">
+		<button data-control="resynchronize" class="btn-flat right blue-grey-text lighten-5"><i class="material-icons">refresh</i></button>
+		<h4 class="persona-name blue-grey-text lighten-5">
+			<a href="#/player/<%- id %>"><%- personaname %></a>
+			<a href="<%- steam.profileurl %>" title="<%- tr('View on Steam') %>" target="_blank"><i class="material-icons green-text">link</i></a>
+		</h4>
+		<div id="gamesummary" class="blue-grey-text lighten-5">
+			<%- tr("Loading profile information, please wait...") %>
+			<div class="progress">
+				<div class="indeterminate"></div>
+			</div>
+		</div>
+	</div>
+</div>

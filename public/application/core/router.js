@@ -1,15 +1,11 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
 	var Form = require('core/form');
-	var PlayerProfile = require('player/player');
 	var formTemplate = require('tpl!index/templates/form.html');
-	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	return Marionette.AppRouter.extend({
 		routes: {
-			'': 'index',
-			'player': 'player',
-			'player/:id': 'player'
+			'': 'index'
 		},
 
 		initialize: function(options)
@@ -90,44 +86,6 @@ define(function(require) {
 			})
 
 			screen.showChildView('formLocation', form);
-		},
-
-		player: function(id)
-		{
-			if (!id)
-			{
-				this.navigate('/', true);
-			}
-			else
-			{
-				var Player = Backbone.Model.extend({
-					url: function() { return '/api/Players/' + encodeURIComponent(this.id); }
-				});
-
-				var player = new Player({
-					id: id
-				});
-
-				this.listenToOnce(player, 'sync', function(model, response, options) {
-					this.getApp().showScreen(new PlayerProfile({
-						model: model
-					}));
-				});
-
-				this.listenToOnce(player, 'error', function(model, response, options) {
-					this.getApp().showScreen(new Marionette.View({
-						class: 'page-error',
-						template: errorTemplate,
-						model: new Backbone.Model(response)
-					}));
-				});
-
-				this.listenToOnce(player, 'sync error', function() {
-					this.stopListening(player);
-				});
-
-				player.fetch();
-			}
 		}
 	});
 });

@@ -3,7 +3,10 @@
 		<span title="<%- name %> - <%- unlocked %> of <%- total %> (<%- percentage.toFixed(1) %>%)">
 	<% } else if (obj.lowestGlobalPercentage) { %>
 		<span title="<%- name %> - <%- lowestGlobalPercentage.toFixed(1) %>%">
+	<% } else { %>
+		<span title="<%- name %>">
 	<% } %>
+
 
 		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg" />
 	</span>

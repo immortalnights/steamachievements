@@ -4,6 +4,7 @@ body {
 	flex-direction: column;
 	background-color: #303030;
 	font-family: Arial, Helvetica;
+	overflow-y: scroll;
 }
 
 nav {

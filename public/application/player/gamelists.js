@@ -1,7 +1,8 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
-	var PlayerGames = require('collections/playergames');
-	var PlayerAchievements = require('collections/playerachievements');
+	var List = require('core/views/list');
+	var PlayerGames = require('player/collections/games');
+	var PlayerAchievements = require('player/collections/achievements');
 	var template = require('tpl!player/templates/lists.html');
 	var gameTemplate = require('tpl!player/templates/game.html');
 	var achievementTemplate = require('tpl!player/templates/achievement.html');
@@ -24,49 +25,44 @@ define(function(require) {
 
 		onRender: function()
 		{
-			var List = Marionette.NextCollectionView.extend({
-				tagName: 'ul',
-				className: '',
-				childView: Marionette.View,
-				childViewOptions: {
-					tagName: 'li',
-					template: gameTemplate
-				},
-				emptyView: Marionette.View,
+			var GameList = List.extend({
+				childViewOptions: _.defaults({
+					template: gameTemplate,
+				}, List.prototype.childViewOptions),
 				emptyViewOptions: {
 					template: _.template('<%- tr("No games to display.") %>')
 				}
 			});
 
 			var highestGames = new PlayerGames(null, { playerId: this.model.id });
-			this.showChildView('highestGamesLocation', new List({
+			this.showChildView('highestGamesLocation', new GameList({
 				className: 'game-list',
-				collection: highestGames,
+				collection: highestGames
 			}));
 			highestGames.fetch({ data: { 'order-by': 'percent DESC' } });
 
 			var lowestGames = new PlayerGames(null, { playerId: this.model.id });
-			this.showChildView('lowestGamesLocation', new List({
+			this.showChildView('lowestGamesLocation', new GameList({
 				className: 'game-list',
-				collection: lowestGames,
+				collection: lowestGames
 			}));
 			lowestGames.fetch({ data: { 'order-by': 'percent ASC' } });
 
 			var easiestGames = new PlayerGames(null, { playerId: this.model.id });
-			this.showChildView('easiestGamesLocation', new List({
+			this.showChildView('easiestGamesLocation', new GameList({
 				className: 'game-list',
-				collection: easiestGames,
+				collection: easiestGames
 			}));
 			easiestGames.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 
 			var easiestAchievements = new PlayerAchievements(null, { playerId: this.model.id });
-			this.showChildView('easiestAchievementsLocation', new List({
+			this.showChildView('easiestAchievementsLocation', new GameList({
 				className: 'row',
 				collection: easiestAchievements,
 				childViewOptions: _.defaults({
 					template: achievementTemplate,
 					className: 'col s6',
-				}, List.prototype.childViewOptions)
+				}, GameList.prototype.childViewOptions)
 			}));
 			easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });
 		}

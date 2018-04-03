@@ -1,15 +1,21 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
-	var Header = require('player/header');
-	var template = require('tpl!player/templates/layout.html');
+	var PlayerSummary = require('player/models/summary');
+	var template = require('tpl!player/templates/header.html');
+	var summaryTemplate = require('tpl!player/templates/summary.html');
+	var privateProfileTemplate = require('tpl!player/templates/privateprofile.html');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	return Marionette.View.extend({
 		template: template,
 
 		regions: {
-			headerLocation: '#header',
-			bodyLocation: '#body'
+			gameSummaryLocation: '#gamesummary'
+		},
+
+		events: {
+			'click a[data-control=reload]': 'onReloadProfile',
+			'click button[data-control=resynchronize]': 'onResynchronizeProfile'
 		},
 
 		initialize: function(options)
@@ -20,9 +26,6 @@ define(function(require) {
 
 		onRender: function()
 		{
-			this.showChildView('headerLocation', new Header({ model: this.model }));
-
-			return
 			var permission = this.model.get('steam').communityvisibilitystate;
 
 			// public
@@ -33,7 +36,7 @@ define(function(require) {
 			else
 			{
 				var self = this;
-				setTimeout(function() {
+				_.delay(function() {
 					self.showChildView('gameSummaryLocation', new Marionette.View({
 						template: privateProfileTemplate
 					}));
@@ -48,7 +51,7 @@ define(function(require) {
 			{
 				var self = this;
 				// poll every ten seconds
-				setTimeout(function() {
+				_.delay(function() {
 					self.model.fetch()
 					.then(function() {
 						self.render();
@@ -64,7 +67,7 @@ define(function(require) {
 			}
 			else
 			{
-				var summary = new GameSummary({
+				var summary = new PlayerSummary({
 					id: this.model.id,
 				});
 
@@ -84,11 +87,7 @@ define(function(require) {
 					}));
 				});
 
-				this.listenToOnce(summary, 'sync', this.stopListening);
-
-				this.showChildView('gameListsLocations', new GameLists({
-					model: this.model
-				}));
+				this.listenToOnce(summary, 'sync error', this.stopListening);
 
 				summary.fetch();
 			}
@@ -97,18 +96,13 @@ define(function(require) {
 		onReloadProfile: function(event)
 		{
 			event.preventDefault();
+			this.model.resynchronize();
 		},
 
 		onResynchronizeProfile: function(event)
 		{
 			event.preventDefault();
-
-			Backbone.ajax({
-				url: '/api/Players/' + this.model.id + '/Resynchronize/invoke/',
-				method: 'put',
-				data: JSON.stringify({}),
-				contentType: 'application/json'
-			});
+			this.model.resynchronize();
 		}
 	});
 });
