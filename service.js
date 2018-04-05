@@ -134,7 +134,7 @@ module.exports = class Service {
 	}
 
 	// resynchronize a single player, starts processing the queue immediately
-	resynchronizePlayer(playerId)
+	resynchronizePlayer(playerId, force)
 	{
 		const resynchronizePlayerFactory2 = function(id, db, steam) {
 			return () => {
@@ -142,9 +142,12 @@ module.exports = class Service {
 					// verify the player can be resynchronized again as they may have already been resynchronized
 					// earlier in the queue.
 					this.checkPlayer(id)
-					.then(function() {
+					.then(() => {
 						// exec factory to get task promise
-						return resynchronizePlayerFactory(id, db, steam)();
+						return resynchronizePlayerFactory(id, db, steam)()
+						.then(() => {
+							this.resynchronizeGames();
+						});
 					})
 					.then(function() { resolve(id); })
 					.catch(function(err) {
@@ -154,6 +157,12 @@ module.exports = class Service {
 					});
 				});
 			}
+		}
+
+		// if force, remove the player from the pending resynchronizations
+		if (force === true)
+		{
+			delete this.triggeredResynchronizations[playerId];
 		}
 
 		if (this.triggeredResynchronizations[playerId])
@@ -238,7 +247,7 @@ module.exports = class Service {
 			});
 			const weekAgo = moment().add(-7, 'days');
 			const query = {
-				achievements: { $type: 'array' },
+				achievements: { $ne: false },
 				$or: [{
 					resynchronized: 'never'
 				}, {

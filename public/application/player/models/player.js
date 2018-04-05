@@ -7,7 +7,7 @@ define(function(require) {
 		resynchronize: function()
 		{
 			return Backbone.ajax({
-				url: this.url() + '/Resynchronize/invoke/',
+				url: this.url() + '/Resynchronize/invoke/?force=true',
 				method: 'put',
 				data: JSON.stringify({}),
 				contentType: 'application/json'

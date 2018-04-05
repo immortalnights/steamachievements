@@ -24,6 +24,20 @@ define(function(require) {
 		}
 	}
 
+	var renderIfResynchronized = function(model, callback) {
+		var resynchronizationState = model.get('resynchronized');
+		if (resynchronizationState === 'never' || resynchronizationState === 'pending')
+		{
+			setTimeout(function() {
+				model.fetch().then(_.bind(renderIfResynchronized, null, model, callback));
+			}, 10000);
+		}
+		else
+		{
+			callback();
+		}
+	}
+
 	return Marionette.AppRouter.extend({
 		routes: {
 			'player': 'player',
@@ -49,8 +63,9 @@ define(function(require) {
 					model: model
 				});
 
-				// must be rendered after
-				profile.showChildView('bodyLocation', new Lists({ model: model }));
+				renderIfResynchronized(model, function() {
+					profile.showChildView('bodyLocation', new Lists({ model: model }));
+				});
 
 				return profile;
 			}, this))
@@ -65,7 +80,9 @@ define(function(require) {
 					model: model
 				});
 
-				profile.showChildView('bodyLocation', new PerfectGames({ model: model }));
+				renderIfResynchronized(model, function() {
+					profile.showChildView('bodyLocation', new PerfectGames({ model: model }));
+				});
 
 				return profile;
 			}, this))

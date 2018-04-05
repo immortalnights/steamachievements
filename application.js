@@ -33,7 +33,7 @@ db.connect(config.database)
 		}
 		else if (message.resynchronize)
 		{
-			service.resynchronizePlayer(message.resynchronize);
+			service.resynchronizePlayer(message.resynchronize, message.force);
 		}
 	});
 

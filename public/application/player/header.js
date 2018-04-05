@@ -47,25 +47,7 @@ define(function(require) {
 		renderPublicProfile()
 		{
 			var resynchronizationState = this.model.get('resynchronized');
-			if (resynchronizationState === 'never' || resynchronizationState === 'pending')
-			{
-				var self = this;
-				// poll every ten seconds
-				_.delay(function() {
-					self.model.fetch()
-					.then(function() {
-						self.render();
-					})
-					.fail(function(response, statusText, errorString) {
-						self.showChildView('gameSummaryLocation', new Marionette.View({
-							className: 'alert alert-danger',
-							template: errorTemplate,
-							model: new Backbone.Model(response)
-						}));
-					});
-				}, 10000);
-			}
-			else
+			if (resynchronizationState !== 'never' && resynchronizationState !== 'pending')
 			{
 				var summary = new PlayerSummary({
 					id: this.model.id,
