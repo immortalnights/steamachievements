@@ -5,7 +5,8 @@ define(function(require) {
 
 	return Marionette.AppRouter.extend({
 		routes: {
-			'': 'index'
+			'': 'index',
+			'*notFound': 'notFound'
 		},
 
 		initialize: function(options)
@@ -86,6 +87,11 @@ define(function(require) {
 			})
 
 			screen.showChildView('formLocation', form);
+		},
+
+		notFound: function()
+		{
+			Backbone.history.navigate('#/', true);
 		}
 	});
 });

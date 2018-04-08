@@ -1,4 +1,4 @@
-<a href="http://store.steampowered.com/app/<%- obj.appid || obj._id %>" target="_blank">
+<a href="#/game/<%- obj.appid || obj._id %>">
 	<% if (obj.percentage) { %>
 		<span title="<%- name %> - <%- unlocked %> of <%- total %> (<%- percentage.toFixed(1) %>%)">
 	<% } else if (obj.lowestGlobalPercentage) { %>
@@ -6,7 +6,6 @@
 	<% } else { %>
 		<span title="<%- name %>">
 	<% } %>
-
 
 		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg" />
 	</span>

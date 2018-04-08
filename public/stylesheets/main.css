@@ -126,3 +126,57 @@ ul.game-list {
 	padding: 0;
 	margin: 0;
 }
+
+.game-icon-container {
+	float: right;
+	line-height: 0;
+	border: 1px solid black;
+}
+
+.achievement-list > div {
+	display: flex;
+	flex-direction: row;
+	margin-bottom: 5px;
+}
+
+.achievement-list .icon {
+	margin-right: 10px;
+	flex: 0 0 0;
+}
+
+.achievement-list .global-percentage {
+	position: relative;
+	border: 1px solid #455a64;
+	flex: 1 0 0;
+	/* FIXME - shouldn't need to force the height - doesn't allow text to wrap */
+	height: 64px;
+	overflow: hidden;
+}
+
+.achievement-list .global-percentage .description {
+	color: #90a4ae;
+	padding: 0 1rem;
+}
+
+.achievement-list .global-percentage .description h5 {
+	margin: 0.7rem 0 0;
+}
+
+.achievement-list .global-percentage .description p {
+	margin: 0;
+}
+
+.achievement-list .global-percentage .percentage-bar {
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	margin: 2px;
+	background-color: #455a64;
+	z-index: -1;
+}
+
+.achievement-list .global-percentage .percentage {
+	float: right;
+	margin-top: 0.7rem;
+	margin-right: 10px;
+}

@@ -5,16 +5,16 @@ define(function(require) {
 
 	return Backbone.Collection.extend({
 		url: function() {
-			return 'api/Players/' + encodeURIComponent(this.playerId) + '/Games';
+			return 'api/Games/' + encodeURIComponent(this.gameId) + '/Achievements';
 		},
 
 		initialize: function(models, options)
 		{
 			Backbone.Collection.prototype.initialize.call(this, options);
 
-			this.playerId = options.playerId;
+			this.gameId = options.gameId;
 
-			console.assert(this.playerId, "Collection must be constructed with playerId option");
+			console.assert(this.gameId, "Collection must be constructed with gameId option");
 		}
 	});
 });

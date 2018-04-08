@@ -6,6 +6,7 @@ const config = require('./config.json');
 const Database = require('./lib/database');
 const Steam = require('./lib/steam');
 const playerRouterFactory = require('./lib/routers/player');
+const gameRouterFactory = require('./lib/routers/game');
 
 process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
@@ -41,6 +42,7 @@ db.connect(config.database)
 	// Apply API router
 	app.use('/api', router);
 	app.use('/api', playerRouterFactory(db, steam));
+	app.use('/api', gameRouterFactory(db, steam));
 
 	app.use(express.static('public'));
 	app.use('/node_modules', express.static('node_modules'));

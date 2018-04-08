@@ -40,7 +40,6 @@ define(function(require) {
 
 	return Marionette.AppRouter.extend({
 		routes: {
-			'player': 'player',
 			'player/:id': 'player',
 			'player/:id/perfect': 'playerPerfect'
 		},
