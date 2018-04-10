@@ -44,8 +44,12 @@ db.connect(config.database)
 	app.use('/api', playerRouterFactory(db, steam));
 	app.use('/api', gameRouterFactory(db, steam));
 
-	app.use(express.static('public'));
-	app.use('/node_modules', express.static('node_modules'));
+	app.use(express.static('public', {
+		maxAge: '1d'
+	}));
+	app.use('/node_modules', express.static('node_modules', {
+		maxAge: '1d'
+	}));
 
 	try
 	{
