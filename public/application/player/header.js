@@ -4,6 +4,8 @@ define(function(require) {
 	var template = require('tpl!player/templates/header.html');
 	var summaryTemplate = require('tpl!player/templates/summary.html');
 	var privateProfileTemplate = require('tpl!player/templates/privateprofile.html');
+	var gameTemplate = require('tpl!player/templates/game.html');
+	var achievementTemplate = require('tpl!player/templates/achievement.html');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	return Marionette.View.extend({
@@ -54,11 +56,53 @@ define(function(require) {
 				});
 
 				this.listenToOnce(summary, 'sync', function(model, response, options) {
-					this.showChildView('gameSummaryLocation', new Marionette.View({
+					var view = new Marionette.View({
 						className: 'summary-statistics',
 						template: summaryTemplate,
-						model: model
+						model: model,
+
+						regions: {
+							recentGamesLocation: '#recentgames',
+							recentAchievementsLocation: '#recentachievements'
+						}
+					});
+					this.showChildView('gameSummaryLocation', view);
+
+					var recentGames = new Backbone.Collection(model.get('recentGames'));
+					var recentAchievements = new Backbone.Collection(model.get('recentAchievements'));
+					recentAchievements.each(function(game) {
+						_.each(game.get('achievements'), function(achievement) {
+							achievement.unlocked = true;
+						});
+					});
+					console.log(recentAchievements);
+
+					recentGames.invoke('set', 'smallIcon', true);
+					recentAchievements.invoke('set', 'smallIcon', true);
+
+					view.showChildView('recentGamesLocation', new Marionette.NextCollectionView({
+						collection: recentGames,
+						className: 'game-list single-row',
+						tagName: 'ul',
+						childView: Marionette.View,
+						childViewOptions: {
+							tagName: 'li',
+							template : gameTemplate
+						}
 					}));
+
+					view.showChildView('recentAchievementsLocation', new Marionette.NextCollectionView({
+						collection: recentAchievements,
+						className: 'row',
+						xtagName: 'ul',
+						childView: Marionette.View,
+						childViewOptions: {
+							xtagName: 'li',
+							className: 'col s4',
+							template : achievementTemplate
+						}
+					}));
+
 				});
 
 				this.listenToOnce(summary, 'error', function(model, response, options) {

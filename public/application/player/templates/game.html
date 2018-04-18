@@ -7,6 +7,10 @@
 		<span title="<%- name %>">
 	<% } %>
 
+	<% if (obj.smallIcon === true) { %>
+		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_icon_url %>.jpg" />
+	<% } else { %>
 		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg" />
+	<% } %>
 	</span>
 </a>

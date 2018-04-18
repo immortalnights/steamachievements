@@ -93,8 +93,12 @@ ul.game-list > li {
 	margin: 0 4px;
 }
 
+ul.game-list.single-row > li:first-child {
+	margin: 0 4px 0 0;
+}
+
 ul.game-list {
-	margin-bottom: 0;
+	margin: 0;
 }
 
 .view-more-link-container {
@@ -106,6 +110,14 @@ ul.game-list {
 .achievement-icon {
 	-webkit-filter: grayscale(100%);
 	filter: grayscale(100%);
+}
+.achievement-icon.small {
+	width: 32px;
+	height: 32px;
+}
+.achievement-icon.unlocked {
+	-webkit-filter: none;
+	filter: none;
 }
 
 /* alert */
