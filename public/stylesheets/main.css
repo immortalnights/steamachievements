@@ -107,17 +107,14 @@ ul.game-list {
 	padding: 0;
 }
 
-.achievement-icon {
-	-webkit-filter: grayscale(100%);
-	filter: grayscale(100%);
-}
 .achievement-icon.small {
 	width: 32px;
 	height: 32px;
 }
-.achievement-icon.unlocked {
-	-webkit-filter: none;
-	filter: none;
+
+.achievement-icon.grayscale {
+	-webkit-filter: grayscale(100%);
+	filter: grayscale(100%);
 }
 
 /* alert */

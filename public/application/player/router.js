@@ -4,6 +4,8 @@ define(function(require) {
 	var Profile = require('player/profile');
 	var Lists = require('player/gamelists');
 	var PerfectGames = require('player/perfectgames');
+	var Game = require('game/models/game');
+	var GameAchievements = require('game/layout');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	var loadPlayer = function(id) {
@@ -41,7 +43,8 @@ define(function(require) {
 	return Marionette.AppRouter.extend({
 		routes: {
 			'player/:id': 'player',
-			'player/:id/perfect': 'playerPerfect'
+			'player/:id/game/:game': 'game',
+			'player/:id/perfect': 'perfect'
 		},
 
 		initialize: function(options)
@@ -71,7 +74,34 @@ define(function(require) {
 			.fail(_.bind(this.playerUnknown, this));
 		},
 
-		playerPerfect: function(id)
+		game: function(id, appid)
+		{
+			loadPlayer(id)
+			.then(screenFactory(function(model) {
+				var profile = new Profile({
+					model: model
+				});
+
+				renderIfResynchronized(model, function() {
+					var game = new Game({
+						id: appid
+					});
+
+					game.fetch({ data: { players: id }})
+					.then(function() {
+						profile.showChildView('bodyLocation', new GameAchievements({
+							playerId: id,
+							model: game
+						}));
+					});
+				});
+
+				return profile;
+			}, this))
+			.fail(_.bind(this.playerUnknown, this));
+		},
+
+		perfect: function(id)
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {

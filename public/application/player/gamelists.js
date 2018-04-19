@@ -25,7 +25,18 @@ define(function(require) {
 
 		onRender: function()
 		{
+			var playerId = this.model.id;
 			var GameList = List.extend({
+				childView: Marionette.View.extend({
+					serializeData: function()
+					{
+						var data = Marionette.View.prototype.serializeData.apply(this, arguments);
+
+						data.playerId = playerId;
+
+						return data
+					}
+				}),
 				childViewOptions: _.defaults({
 					template: gameTemplate,
 				}, List.prototype.childViewOptions),

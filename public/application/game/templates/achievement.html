@@ -1,5 +1,9 @@
 <div class="icon">
-	<img class="xachievement-icon" alt="<%- displayName %>" src="<%- icon %>" />
+	<% if (unlocked) { %>
+		<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" alt="<%- displayName %>" src="<%- icon %>" />
+	<% } else { %>
+		<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" alt="<%- displayName %>" src="<%- icongray %>" />
+	<% } %>
 </div>
 
 <div class="global-percentage">

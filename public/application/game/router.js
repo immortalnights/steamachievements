@@ -1,9 +1,7 @@
 define(function(require) {
 	var Marionette = require('backbone.marionette');
 	var Game = require('game/models/game');
-	var template = require('tpl!game/templates/layout.html');
-	var achievementTemplate = require('tpl!game/templates/achievement.html');
-		// var Lists = require('player/gamelists');
+	var Layout = require('game/layout');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	var loadGame = function(id) {
@@ -57,31 +55,9 @@ define(function(require) {
 		{
 			loadGame(id)
 			.then(screenFactory(function(model) {
-				var view = new Marionette.View({
-					template: template,
-					model: model,
-					regions: {
-						achievementsLocation: '#achievements'
-					}
+				return new Layout({
+					model: model
 				});
-
-				var achievements = new Backbone.Collection(model.get('achievements'), {
-					comparator: function(achievement) {
-						return -achievement.get('percent');
-					}
-				});
-				achievements.sort();
-
-				view.showChildView('achievementsLocation', new Marionette.NextCollectionView({
-					className: 'achievement-list',
-					collection: achievements,
-					childView: Marionette.View,
-					childViewOptions: {
-						template: achievementTemplate
-					}
-				}));
-
-				return view;
 			}, this))
 			.fail(_.bind(function(response) {
 				this.getApp().showScreen(new Marionette.View({

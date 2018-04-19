@@ -51,8 +51,9 @@ define(function(require) {
 			var resynchronizationState = this.model.get('resynchronized');
 			if (resynchronizationState !== 'never' && resynchronizationState !== 'pending')
 			{
+				var playerId = this.model.id;
 				var summary = new PlayerSummary({
-					id: this.model.id,
+					id: this.model.id
 				});
 
 				this.listenToOnce(summary, 'sync', function(model, response, options) {
@@ -75,7 +76,6 @@ define(function(require) {
 							achievement.unlocked = true;
 						});
 					});
-					console.log(recentAchievements);
 
 					recentGames.invoke('set', 'smallIcon', true);
 					recentAchievements.invoke('set', 'smallIcon', true);
@@ -84,7 +84,16 @@ define(function(require) {
 						collection: recentGames,
 						className: 'game-list single-row',
 						tagName: 'ul',
-						childView: Marionette.View,
+						childView: Marionette.View.extend({
+							serializeData: function()
+							{
+								var data = Marionette.View.prototype.serializeData.call(this);
+
+								data.playerId = playerId;
+
+								return data;
+							}
+						}),
 						childViewOptions: {
 							tagName: 'li',
 							template : gameTemplate
@@ -95,7 +104,16 @@ define(function(require) {
 						collection: recentAchievements,
 						className: 'row',
 						xtagName: 'ul',
-						childView: Marionette.View,
+						childView: Marionette.View.extend({
+							serializeData: function()
+							{
+								var data = Marionette.View.prototype.serializeData.call(this);
+
+								data.playerId = playerId;
+
+								return data;
+							}
+						}),
 						childViewOptions: {
 							xtagName: 'li',
 							className: 'col s4',

@@ -1,4 +1,4 @@
-<a href="#/game/<%- obj.appid || obj._id %>" title="<%- name %>">
+<a href="#/player/<%- playerId %>/game/<%- obj.appid || obj._id %>" title="<%- name %>">
 	<% if (obj.smallIcon === true) { %>
 		<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_icon_url %>.jpg" />
 	<% } else { %>
@@ -8,6 +8,10 @@
 
 <% _.each(achievements.reverse(), function(achievement) { %>
 	<a href="http://store.steampowered.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank">
-		<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %> <%- (achievement.unlocked ? 'unlocked' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
+		<% if (achievement.unlocked) { %>
+			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
+		<% } else { %>
+			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icongray %>" />
+		<% } %>
 	</a>
 <% }); %>
