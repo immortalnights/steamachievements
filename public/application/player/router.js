@@ -1,11 +1,15 @@
 define(function(require) {
+	'use strict';
+
 	var Marionette = require('backbone.marionette');
 	var Player = require('player/models/player');
+	var Friends = require('player/collections/friends');
 	var Profile = require('player/profile');
 	var Lists = require('player/gamelists');
 	var PerfectGames = require('player/perfectgames');
 	var Game = require('game/models/game');
 	var GameAchievements = require('game/layout');
+	var friendTemplate = require('tpl!player/templates/friend.html');
 	var errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	var loadPlayer = function(id) {
@@ -44,7 +48,8 @@ define(function(require) {
 		routes: {
 			'player/:id': 'player',
 			'player/:id/game/:game': 'game',
-			'player/:id/perfect': 'perfect'
+			'player/:id/perfect': 'perfect',
+			'player/:id/friends': 'friends'
 		},
 
 		initialize: function(options)
@@ -111,6 +116,35 @@ define(function(require) {
 
 				renderIfResynchronized(model, function() {
 					profile.showChildView('bodyLocation', new PerfectGames({ model: model }));
+				});
+
+				return profile;
+			}, this))
+			.fail(_.bind(this.playerUnknown, this));
+		},
+
+		friends: function(id)
+		{
+			loadPlayer(id)
+			.then(screenFactory(function(model) {
+				var profile = new Profile({
+					model: model
+				});
+
+				renderIfResynchronized(model, function() {
+					var friends = new Friends(null, { playerId: id });
+					profile.showChildView('bodyLocation', new Marionette.NextCollectionView({
+						collection: friends,
+						tagName: 'ul',
+						className: '',
+						childView: Marionette.View,
+						childViewOptions: {
+							tagName: 'li',
+							className: 'list-item',
+							template: friendTemplate
+						}
+					}));
+					friends.fetch();
 				});
 
 				return profile;

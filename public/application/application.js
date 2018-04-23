@@ -1,5 +1,6 @@
 define(function(require) {
 	'use strict';
+
 	var Marionette = require('backbone.marionette');
 	var Router = require('core/router');
 	var PlayerRouter = require('player/router');

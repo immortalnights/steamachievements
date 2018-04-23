@@ -1,0 +1,9 @@
+<a href="#/player/<%- friend.steamid %>" style="line-height: 32px;">
+	<% if (!_.isEmpty(obj.player)) { %>
+		<img src="<%- player[0].steam.avatar %>" class="avatar" />
+		<span ><%- player[0].personaname %></span>
+	<% } else { %>
+		<img src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb.jpg" class="avatar" />
+		<span><%- tr("Unknown Player") %></span>
+	<% } %>
+</a>

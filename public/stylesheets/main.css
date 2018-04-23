@@ -189,3 +189,21 @@ ul.game-list {
 	margin-top: 0.7rem;
 	margin-right: 10px;
 }
+
+.list-item {
+	width: 25%;
+	display: inline-block;
+	margin: 5px 0px;
+}
+
+.list-item a {
+	position: relative;
+	display: block;
+	padding-left: 40px;
+}
+
+.list-item a img {
+	position: absolute;
+	top: 0;
+	left: 0;
+}

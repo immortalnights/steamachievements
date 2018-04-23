@@ -1,7 +1,7 @@
 define(function(require) {
 	'use strict';
 
-	Backbone = require('backbone');
+	var Backbone = require('backbone');
 
 	return Backbone.Collection.extend({
 		url: function() {

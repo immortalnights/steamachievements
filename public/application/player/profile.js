@@ -1,4 +1,6 @@
 define(function(require) {
+	'use strict';
+
 	var Marionette = require('backbone.marionette');
 	var Header = require('player/header');
 	var template = require('tpl!player/templates/layout.html');

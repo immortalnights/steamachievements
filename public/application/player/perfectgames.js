@@ -1,4 +1,6 @@
 define(function(require) {
+	'use strict';
+
 	var Marionette = require('backbone.marionette');
 	var List = require('core/views/list');
 	var PlayerGames = require('player/collections/games');

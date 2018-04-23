@@ -1,4 +1,6 @@
 define(function(require) {
+	'use strict';
+
 	var Marionette = require('backbone.marionette');
 	var PlayerSummary = require('player/models/summary');
 	var template = require('tpl!player/templates/header.html');

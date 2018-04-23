@@ -91,6 +91,7 @@ define(function(require) {
 
 		notFound: function()
 		{
+			console.warn("Unknown url", Backbone.history.hash);
 			Backbone.history.navigate('#/', true);
 		}
 	});

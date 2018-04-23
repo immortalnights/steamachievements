@@ -5,7 +5,7 @@ define(function(require) {
 
 	return Backbone.Collection.extend({
 		url: function() {
-			return 'api/Players/' + encodeURIComponent(this.playerId) + '/Games';
+			return 'api/Players/' + encodeURIComponent(this.playerId) + '/Friends';
 		},
 
 		initialize: function(models, options)
