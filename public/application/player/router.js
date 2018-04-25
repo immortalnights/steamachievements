@@ -133,17 +133,41 @@ define(function(require) {
 
 				renderIfResynchronized(model, function() {
 					var friends = new Friends(null, { playerId: id });
-					profile.showChildView('bodyLocation', new Marionette.NextCollectionView({
-						collection: friends,
-						tagName: 'ul',
-						className: '',
-						childView: Marionette.View,
-						childViewOptions: {
-							tagName: 'li',
-							className: 'list-item',
-							template: friendTemplate
+
+					var friendsModel = new Backbone.Model({
+						friends: 0
+					});
+
+					var view = new Marionette.View({
+						template: _.template('<div id="friends"></div><p>And <%- friends %> other friend(s)...</p>'),
+						model: friendsModel,
+
+						regions: {
+							friendsLocation: '#friends'
 						}
-					}));
+					});
+
+					friendsModel.listenToOnce(friends, 'sync', function(collection) {
+						this.set('friends', model.get('friends') - collection.length);
+						view.render();
+					});
+
+					view.on('render', function() {
+						this.showChildView('friendsLocation', new Marionette.NextCollectionView({
+							collection: friends,
+							tagName: 'ul',
+							className: '',
+							childView: Marionette.View,
+							childViewOptions: {
+								tagName: 'li',
+								className: 'list-item',
+								template: friendTemplate
+							}
+						}));
+					});
+
+					profile.showChildView('bodyLocation', view);
+
 					friends.fetch();
 				});
 
