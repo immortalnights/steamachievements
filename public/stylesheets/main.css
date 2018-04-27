@@ -15,6 +15,12 @@ main {
 	flex: 1 0 auto;
 	color: #607d8b;
 }
+.material-icons {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	vertical-align: middle;
+}
 
 /* overrides */
 /* return button icon size to default */
@@ -26,25 +32,27 @@ main {
 	white-space: nowrap;
 }
 
-.page-footer {
-	background-color: #212121;
-	font-size: 0.8em;
-	padding-top: 10px;
+footer {
+	position: fixed;
+	z-index: 51;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	top: auto;
+	color: #999;
+	text-align: center;
+	font-size: 11.2px;
+	background: rgba(10,17,25,.8);
+	height: 21px;
+	padding-top: 3px;
 }
 
-.page-footer .row {
-	margin-bottom: 10px;
+a {
+	color: inherit;
 }
 
-.page-footer p {
-	margin-top: 6px;
-	margin-bottom: 6px;
-}
-
-.page-footer .footer-copyright {
-	background-color: #131212;
-	padding: 8px 0;
-	min-height: 0px;
+a:hover {
+	color: white;
 }
 
 .profile-header {

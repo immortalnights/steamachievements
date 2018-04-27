@@ -25,7 +25,7 @@ define(function(require) {
 			});
 
 			var screen = new Marionette.View({
-				template: _.template('<div id="playerform"></div><div id="summary"></div>'),
+				template: _.template('<div id="playerform" class="" style="margin-top: 10rem"></div><div id="summary"></div>'),
 
 				regions: {
 					formLocation: '#playerform',
@@ -44,21 +44,27 @@ define(function(require) {
 				if (!show)
 				{
 					// disable the button and show the loader
-					this.$('button[type=submit]').hide().prop('disabled', true);
-					this.$('.preloader-wrapper').show();
+					this.$('.spinner-layer').fadeIn();
 				}
 				else
 				{
-					this.$('button[type=submit]').show().prop('disabled', false);
-					this.$('.preloader-wrapper').hide();
+					this.$('.spinner-layer').hide();
 				}
 			}
+
+			form.once('render', function() {
+				var self = this;
+				this.$('input').on('input', function() {
+					self.$('.alert-danger').fadeOut();
+				});
+			});
 
 			form.on('serialized', function(formData) {
 				var self = this;
 
 				toggleControls.call(this, false);
-				this.$('.error-message').hide();
+				this.$('.alert-danger').hide();
+				this.$('.preloader-wrapper').fadeIn();
 
 				Backbone.ajax('/api/players', {
 					method: 'post',
@@ -71,7 +77,9 @@ define(function(require) {
 				})
 				.fail(function(xhr, textStatus, errorThrown) {
 
-					var el = self.$('.error-message');
+					self.$('.preloader-wrapper').hide();
+
+					var el = self.$('.alert-danger');
 					if (xhr && xhr.responseJSON)
 					{
 						el.text(xhr.responseJSON.error);
@@ -80,7 +88,7 @@ define(function(require) {
 					{
 						el.text("Failed to find player.");
 					}
-					el.show();
+					el.fadeIn();
 
 					toggleControls.call(self, true);
 				});

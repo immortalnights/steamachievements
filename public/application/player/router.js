@@ -46,7 +46,7 @@ define(function(require) {
 
 	return Marionette.AppRouter.extend({
 		routes: {
-			'player/:id': 'player',
+			'player/:id': 'profile',
 			'player/:id/game/:game': 'game',
 			'player/:id/perfect': 'perfect',
 			'player/:id/friends': 'friends'
@@ -62,7 +62,7 @@ define(function(require) {
 			return require('application')();
 		},
 
-		player: function(id)
+		profile: function(id)
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {

@@ -31,7 +31,6 @@ db.connect(config.database)
 	// API router
 	const router = express.Router();
 	router.use(function(req, res, next) {
-		console.log("Route API");
 		next();
 	});
 

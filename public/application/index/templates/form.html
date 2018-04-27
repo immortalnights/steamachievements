@@ -1,15 +1,14 @@
-<h5 class="blue-grey-text lighten-5"><%- tr("Find a Steam user") %></h5>
-<div class="input-field">
-	<input id="identifier" name="identifier" type="text" class="validate blue-grey-text" required autocomplete="off" placeholder="<%- tr('') %>" class="text-blue-grey" />
-	<label for="identifier"><%- tr("Steam ID, name or URL") %></label>
+<h5 class="blue-grey-text lighten-5 center-align"><%- tr("Achievement focused web application for Steam") %></h5>
+<h6 class="blue-grey-text lighten-5 center-align"><%- tr("Track and plan game achievement progress") %></h6>
+<div class="container">
+	<div class="input-field">
+		<input id="identifier" name="identifier" type="text" class="validate blue-grey-text" required autocomplete="off" placeholder="<%- tr('') %>" class="text-blue-grey" />
+		<label for="identifier"><%- tr("Steam ID, name or URL") %></label>
+	</div>
 </div>
-<div class="right-align">
-	<button type="submit" class="waves-effect waves-light btn blue-grey">
-		<i class="material-icons left">control_point</i>
-		<%- tr("Submit") %>
-	</button>
-	<div class="preloader-wrapper small active" style="display: none;">
-		<div class="spinner-layer spinner-blue-only">
+<div class="center-align" style="height: 45px;">
+	<div class="preloader-wrapper small active">
+		<div class="spinner-layer spinner-blue-only" style="display: none;">
 			<div class="circle-clipper left">
 				<div class="circle"></div>
 			</div>
@@ -21,5 +20,8 @@
 			</div>
 		</div>
 	</div>
-	<div class="error-message card-panel red lighten-4 red-text darken-4-text" style="float: left; margin: 0; padding: 12px; display: none;"></div>
+	<div class="alert alert-danger red lighten-4 red-text darken-4-text" style="display: none;"></div>
 </div>
+<p class="center-align">
+	<small><i class="material-icons orange-text" >warning</i> <%- ("You must have your Steam profile and games privacy settings to public to use this web application.") %> <a href="https://steamcommunity.com/games/593110/announcements/detail/1667896941884942467" target="_blank"><%- tr("Read more") %></a>.</small>
+</p>
