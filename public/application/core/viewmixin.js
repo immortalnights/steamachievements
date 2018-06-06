@@ -8,6 +8,12 @@ define(function(require) {
 		var data = mixinTemplateContext.call(this, target);
 
 		data.moment = moment;
+		data.formatDate = function(date) {
+			return moment(date).format('LLL');
+		}
+		data.formatUnixTimestamp = function(timestamp) {
+			return moment.unix(timestamp).format('LLL');
+		}
 
 		return data;
 	}

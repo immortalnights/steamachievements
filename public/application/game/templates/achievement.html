@@ -7,8 +7,15 @@
 </div>
 
 <div class="global-percentage">
-	<div class="percentage-bar" style="width: <%- percent.toFixed(1) %>%;"></div>
-	<span class="percentage"><%- percent.toFixed(1) %>%</span>
+	<% if (obj.percent) { %>
+		<div class="percentage-bar" style="width: <%- percent.toFixed(1) %>%;"></div>
+		<span class="percentage right-align">
+			<%- percent.toFixed(1) %>%
+			<% if (unlocked) { %>
+				<br /><%- formatUnixTimestamp(players[_.keys(players)[0]]) %>
+			<% } %>
+		</span>
+	<% } %>
 	<div class="description">
 		<h5><%- displayName %></h5>
 		<p><%- obj.description %></p>

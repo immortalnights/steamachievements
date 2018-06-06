@@ -9,7 +9,8 @@ define(function(require) {
 		template: template,
 
 		regions: {
-			achievementsLocation: '#achievements'
+			unlockedAchievementsLocation: '#unlockedachievements',
+			lockedAchievementsLocation: '#lockedachievements'
 		},
 
 		initialize: function(options)
@@ -17,30 +18,57 @@ define(function(require) {
 			Marionette.View.prototype.initialize.call(this, options)
 		},
 
+		serializeData: function()
+		{
+			var data = Marionette.View.prototype.serializeData.call(this);
+
+			data.unlockedCount = _.countBy(this.model.get('achievements'), function(achievement) {
+				return !_.isEmpty(achievement.players);
+			}).true;
+
+			return data;
+		},
+
 		onRender: function()
 		{
 			var playerId = this.getOption('playerId');
 
-			var achievements = new Backbone.Collection(this.model.get('achievements'), {
+			var achievements = new Backbone.Collection(this.model.get('achievements'));
+
+			var unlocked = new Backbone.Collection(achievements.filter(function(achievement) {
+				return !_.isEmpty(achievement.get('players'));
+			}));
+			unlocked.each(function(achievement) {
+				achievement.set('unlocked', true);
+			});
+			// unlocked.sort();
+
+			var locked = new Backbone.Collection(achievements.filter(function(achievement) {
+				return _.isEmpty(achievement.get('players'));
+			}), {
 				comparator: function(achievement) {
 					return -achievement.get('percent');
 				}
 			});
-			achievements.sort();
+			locked.each(function(achievement) {
+				achievement.set('unlocked', false);
+			});
+			locked.sort();
 
-			this.showChildView('achievementsLocation', new Marionette.NextCollectionView({
+
+			this.showChildView('unlockedAchievementsLocation', new Marionette.NextCollectionView({
 				className: 'achievement-list',
-				collection: achievements,
-				childView: Marionette.View.extend({
-					serializeData: function()
-					{
-						var data = Marionette.View.prototype.serializeData.call(this);
+				collection: unlocked,
+				childView: Marionette.View,
+				childViewOptions: {
+					template: achievementTemplate
+				}
+			}));
 
-						data.unlocked = !!data.players[playerId];
-
-						return data;
-					}
-				}),
+			this.showChildView('lockedAchievementsLocation', new Marionette.NextCollectionView({
+				className: 'achievement-list',
+				collection: locked,
+				childView: Marionette.View,
 				childViewOptions: {
 					template: achievementTemplate
 				}

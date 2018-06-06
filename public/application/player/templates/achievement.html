@@ -9,9 +9,9 @@
 <% _.each(achievements.reverse(), function(achievement) { %>
 	<a href="http://store.steampowered.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank">
 		<% if (achievement.unlocked) { %>
-			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
+			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent ? achievement.percent.toFixed(2) : '-' %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icon %>" />
 		<% } else { %>
-			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent.toFixed(2) %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icongray %>" />
+			<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" title="<%- achievement.displayName %> (<%- achievement.percent ? achievement.percent.toFixed(2) : '-' %>%)" alt="<%- achievement.displayName %>" src="<%- achievement.icongray %>" />
 		<% } %>
 	</a>
 <% }); %>

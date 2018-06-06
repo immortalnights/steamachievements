@@ -5,13 +5,21 @@
 	<a href="#/game/<%- _id %>"><%- name %></a> <a href="http://store.steampowered.com/app/<%- _id %>" target="_black"><i class="material-icons green-text">link</i></a>
 </h5>
 
-<p>
-	<%- tr("Total Achievements:") %> <span><%- achievements.length %></span> <br />
-</p>
+<div style="margin-bottom: 10px; display: inline-block">
+	<% var percent = ((unlockedCount / achievements.length) * 100).toFixed(0); %>
+	<%- tr("Achievements:") %> <span>  <%- unlockedCount + ' of ' + achievements.length + ' (' + percent + '%)' %></span>
+	<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
+		<div style="background-color: gray; width: <%- percent %>%; height: 12px;"></div>
+	</div>
+</div>
 
 <hr style="border-color: #90a4ae" />
 
-<div id="achievements"></div>
+<div id="unlockedachievements"></div>
+
+<hr style="border-color: #90a4ae; visibility: hidden; " />
+
+<div id="lockedachievements"></div>
 
 <p class="right-align">
 	<a href="http://steamcommunity.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank"><%- tr("View Achievements on Steam") %></a>
