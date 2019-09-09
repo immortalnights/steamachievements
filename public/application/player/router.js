@@ -8,6 +8,7 @@ define(function(require) {
 	const Profile = require('player/profile');
 	const Lists = require('player/gamelists');
 	const RecentGames = require('player/recentgames');
+	const RecentAchievements = require('player/recentachievements');
 	const PerfectGames = require('player/perfectgames');
 	const Game = require('game/models/game');
 	const GameAchievements = require('game/layout');
@@ -50,6 +51,7 @@ define(function(require) {
 		routes: {
 			'player/:id': 'profile',
 			'player/:id/games': 'games',
+			'player/:id/achievements': 'achievements',
 			'player/:id/game/:game': 'game',
 			'player/:id/perfect': 'perfect',
 			'player/:id/friends': 'friends'
@@ -102,6 +104,24 @@ define(function(require) {
 
 				waitUntilResychronized(model, function() {
 					profile.showChildView('bodyLocation', new RecentGames({ model: model }));
+				});
+
+				return profile;
+			}, this))
+			.fail(_.bind(this.playerUnknown, this));
+		},
+
+		achievements: function(id)
+		{
+			loadPlayer(id)
+			.then(screenFactory(function(model) {
+				let profile = new Profile({
+					model: model,
+					displayRecentActivity: false
+				});
+
+				waitUntilResychronized(model, function() {
+					profile.showChildView('bodyLocation', new RecentAchievements({ model: model }));
 				});
 
 				return profile;

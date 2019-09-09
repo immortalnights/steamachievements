@@ -6,11 +6,21 @@
 </h5>
 
 <div style="margin-bottom: 10px; display: inline-block">
-	<% var percent = ((unlockedCount / achievements.length) * 100).toFixed(0); %>
-	<%- tr("Achievements:") %> <span>  <%- unlockedCount + ' of ' + achievements.length + ' (' + percent + '%)' %></span>
-	<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
-		<div style="background-color: gray; width: <%- percent %>%; height: 12px;"></div>
-	</div>
+	<% if (_.isEmpty(achievements))
+	{
+		%><%- tr("No Achievements") %><%
+	}
+	else
+	{
+		var percent = ((unlockedCount / achievements.length) * 100).toFixed(0);
+		%>
+		<%- tr("Achievements: __a__ of __b__ (__c__%)", { a: unlockedCount, b: achievements.length, c: percent }) %></span>
+		<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
+			<div style="background-color: gray; width: <%- percent %>%; height: 12px;"></div>
+		</div>
+		<%
+	}
+	%>
 </div>
 
 <hr style="border-color: #90a4ae" />

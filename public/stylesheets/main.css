@@ -218,5 +218,18 @@ ul.game-list {
 
 .inline {
 	display: inline-block;
-	margin: 2px;
+}
+
+.recent-games {
+	display: inline-block;
+	margin: 0 8px 0 0;
+}
+
+.recent-achievements a {
+	margin: 0 4px 0 0;
+
+}
+.recent-achievements {
+	display: inline-block;
+	margin: 0 16px 0 0;
 }

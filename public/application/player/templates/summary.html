@@ -3,15 +3,13 @@
 
 <div class="row <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
 	<div class="col s4">
-		<div class="value"><a href="#/player/<%- id %>/games"><%- games.total %></a></div>
+		<div class="value"><a href="#/player/<%- id %>/games" title="<%- tr('View recent games') %>"><%- games.total %></a></div>
 		<label><%- tr("Games") %></label>
 	</div>
 
 	<div class="col s4">
 		<div class="value">
-			<span title="Played <%- games.played %> of <%- games.total %> games">
-				<%- percentPlayed.toFixed(2) + '%' %>
-			</span>
+			<span title="<%- tr('Played __played__ of __total__ games', games) %>"><%- percentPlayed.toFixed(2) + '%' %></span>
 		</div>
 		<label><%- tr("Played") %></label>
 	</div>
@@ -24,21 +22,20 @@
 
 <div class="row">
 	<div class="col s4">
-		<div class="value">
-			<a href="#/player/<%- id %>/perfect">
-				<%- games.perfected %>
-			</a>
-		</div>
+		<div class="value"><a href="#/player/<%- id %>/perfect" title="<%- tr('View perfected games') %>"><%- games.perfected %></a></div>
 		<label><%- tr("Perfect Games") %></label>
 	</div>
 
 	<div class="col s4">
-		<div class="value"><span title="Unlocked <%- achievements.unlocked %> of <%- achievements.total %> achievements"><%- percentUnlocked.toFixed(2) + '%' %></span></div>
-		<label><%- tr("Achievements Unlocked") %></label>
+		<div class="value">
+			<a href="#/player/<%- id %>/achievements" title="<%- tr('View recent achievements') %>"><%- percentUnlocked.toFixed(2) + '%' %></a>
+			<span title="Unlocked <%- achievements.unlocked %> of <%- achievements.total %> achievements" style="cursor: help;"><i class="material-icons tiny dp48">info_outline</i></span>
+		</div>
+		<label><%- tr("Achievements Unlocked") %></a></label>
 	</div>
 
 	<div class="col s4">
-		<div class="value"><a href="#/player/<%- id %>/friends"><%- friendCount %></a></div>
+		<div class="value"><a href="#/player/<%- id %>/friends" title="<%- tr('View friends') %>"><%- friendCount %></a></div>
 		<label><%- tr("Friends") %></label>
 	</div>
 </div>

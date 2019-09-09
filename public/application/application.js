@@ -1,15 +1,16 @@
 define(function(require) {
 	'use strict';
 
-	var Marionette = require('backbone.marionette');
-	var Router = require('core/router');
-	var PlayerRouter = require('player/router');
-	var GameRouter = require('game/router');
-	var viewmixin = require('core/viewmixin');
-	var translation = require('core/translation');
-	var rootTemplate = require('tpl!core/templates/root.html');
+	const Marionette = require('backbone.marionette');
+	const Router = require('core/router');
+	const PlayerRouter = require('player/router');
+	const GameRouter = require('game/router');
+	const viewmixin = require('core/viewmixin');
+	const translation = require('core/translation');
+	const moment = require('moment');
+	const rootTemplate = require('tpl!core/templates/root.html');
 
-	var Application = Marionette.Application.extend({
+	const Application = Marionette.Application.extend({
 		region: 'main',
 
 		initialize: function(options)
@@ -19,6 +20,11 @@ define(function(require) {
 
 		onStart: function()
 		{
+			moment.updateLocale('en', {
+				calendar: {
+					sameElse : 'L [at] LT'
+				}
+			});
 			// this.showView(new Marionette.View({
 			// 	template: rootTemplate,
 
@@ -44,7 +50,7 @@ define(function(require) {
 		}
 	});
 
-	var app = null;
+	let app = null;
 	return function() {
 		if (!app)
 		{

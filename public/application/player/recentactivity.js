@@ -34,8 +34,6 @@ define(function(require) {
 			const playerId = this.model.id;
 			this.showChildView('recentGamesLocation', new Marionette.NextCollectionView({
 				collection: recentGames,
-				xclassName: 'game-list single-row',
-				xtagName: 'ul',
 				childView: Marionette.View.extend({
 					serializeData: function()
 					{
@@ -47,8 +45,7 @@ define(function(require) {
 					}
 				}),
 				childViewOptions: {
-					xtagName: 'li',
-					className: 'inline',
+					className: 'recent-games',
 					template : gameTemplate
 				}
 			}));
@@ -66,7 +63,7 @@ define(function(require) {
 					}
 				}),
 				childViewOptions: {
-					className: 'inline',
+					className: 'recent-achievements',
 					template : achievementTemplate
 				}
 			}));

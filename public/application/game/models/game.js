@@ -1,5 +1,7 @@
 define(function(require) {
-	var Backbone = require('backbone');
+	'use strict';
+
+	const Backbone = require('backbone');
 
 	return Backbone.Model.extend({
 		url: function() { return '/api/Games/' + encodeURIComponent(this.id); }

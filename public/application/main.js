@@ -13,7 +13,7 @@ require.config({
 		'backbone.marionette': '/node_modules/backbone.marionette/lib/backbone.marionette',
 		'backbone.radio': '/node_modules/backbone.radio/build/backbone.radio',
 		'backbone.poller': '/node_modules/backbone-poller/backbone.poller.min',
-		'moment': '/node_modules/moment/min/moment-with-locales.min',
+		'moment': '/node_modules/moment/min/moment-with-locales',
 		// 'materialize': '/node_modules/backbone-poller/backbone.poller.min',
 		// 'fontawesome': '/node_modules/@fortawesome/fontawesome/index',
 		// 'fontawesome-solid': '/node_modules/@fortawesome/fontawesome-free-solid/index',
@@ -22,10 +22,10 @@ require.config({
 	}
 });
 
-requirejs(['application', 'jquery', 'underscore',/*'fontawesome', 'fontawesome-solid', 'fontawesome-regular', 'fontawesome-brands'*/], function(application, fa) {
+requirejs(['application', 'jquery', 'underscore', 'moment',/*'fontawesome', 'fontawesome-solid', 'fontawesome-regular', 'fontawesome-brands'*/], function(application, $, _, moment) {
 	'use strict';
 
-	var app = application();
+	const app = application();
 	_.defer(app.start.bind(app));
 }, function(err) {
 	document.getElementsByTagName('body')[0].innerHTML = err;

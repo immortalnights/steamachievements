@@ -1,9 +1,10 @@
 define(function(require) {
 	'use strict';
-	var Backbone = require('backbone');
-	var Marionette = require('backbone.marionette');
-	var template = require('tpl!game/templates/layout.html');
-	var achievementTemplate = require('tpl!game/templates/achievement.html');
+
+	const Backbone = require('backbone');
+	const Marionette = require('backbone.marionette');
+	const template = require('tpl!game/templates/layout.html');
+	const achievementTemplate = require('tpl!game/templates/achievement.html');
 
 	return Marionette.View.extend({
 		template: template,
@@ -20,11 +21,19 @@ define(function(require) {
 
 		serializeData: function()
 		{
-			var data = Marionette.View.prototype.serializeData.call(this);
+			const data = Marionette.View.prototype.serializeData.call(this);
 
-			data.unlockedCount = _.countBy(this.model.get('achievements'), function(achievement) {
-				return !_.isEmpty(achievement.players);
-			}).true;
+			const achievements = this.model.get('achievements');
+			if (_.isEmpty(achievements))
+			{
+				data.unlockedCount = 0;
+			}
+			else
+			{
+				data.unlockedCount = _.countBy(this.model.get('achievements'), function(achievement) {
+					return !_.isEmpty(achievement.players);
+				}).true;
+			}
 
 			return data;
 		},

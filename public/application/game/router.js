@@ -1,18 +1,20 @@
 define(function(require) {
-	var Marionette = require('backbone.marionette');
-	var Game = require('game/models/game');
-	var Layout = require('game/layout');
-	var errorTemplate = require('tpl!core/templates/errorresponse.html');
+	'use strict';
 
-	var loadGame = function(id) {
-		var game = new Game({
+	const Marionette = require('backbone.marionette');
+	const Game = require('game/models/game');
+	const Layout = require('game/layout');
+	const errorTemplate = require('tpl!core/templates/errorresponse.html');
+
+	const loadGame = function(id) {
+		let game = new Game({
 			id: id
 		});
 
 		return game.fetch().then(function(response) { return game; });
 	}
 
-	var screenFactory = function(fnc, ctx) {
+	const screenFactory = function(fnc, ctx) {
 		return function() {
 			var args = _.toArray(arguments);
 			_.defer(function() {
@@ -22,8 +24,8 @@ define(function(require) {
 		}
 	}
 
-	var renderIfResynchronized = function(model, callback) {
-		var resynchronizationState = model.get('resynchronized');
+	const renderIfResynchronized = function(model, callback) {
+		let resynchronizationState = model.get('resynchronized');
 		if (resynchronizationState === 'never' || resynchronizationState === 'pending')
 		{
 			setTimeout(function() {
