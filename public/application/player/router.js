@@ -1,18 +1,20 @@
 define(function(require) {
 	'use strict';
 
-	var Marionette = require('backbone.marionette');
-	var Player = require('player/models/player');
-	var Friends = require('player/collections/friends');
-	var Profile = require('player/profile');
-	var Lists = require('player/gamelists');
-	var PerfectGames = require('player/perfectgames');
-	var Game = require('game/models/game');
-	var GameAchievements = require('game/layout');
-	var friendTemplate = require('tpl!player/templates/friend.html');
-	var errorTemplate = require('tpl!core/templates/errorresponse.html');
+	const Marionette = require('backbone.marionette');
+	const Player = require('player/models/player');
+	const Games = require('player/collections/games');
+	const Friends = require('player/collections/friends');
+	const Profile = require('player/profile');
+	const Lists = require('player/gamelists');
+	const RecentGames = require('player/recentgames');
+	const PerfectGames = require('player/perfectgames');
+	const Game = require('game/models/game');
+	const GameAchievements = require('game/layout');
+	const friendTemplate = require('tpl!player/templates/friend.html');
+	const errorTemplate = require('tpl!core/templates/errorresponse.html');
 
-	var loadPlayer = function(id) {
+	const loadPlayer = function(id) {
 		var player = new Player({
 			id: id
 		});
@@ -20,7 +22,7 @@ define(function(require) {
 		return player.fetch().then(function() { return player; });
 	}
 
-	var screenFactory = function(fnc, ctx) {
+	const screenFactory = function(fnc, ctx) {
 		return function() {
 			var args = _.toArray(arguments);
 			_.defer(function() {
@@ -30,12 +32,12 @@ define(function(require) {
 		}
 	}
 
-	var renderIfResynchronized = function(model, callback) {
-		var resynchronizationState = model.get('resynchronized');
+	const waitUntilResychronized = function(model, callback) {
+		const resynchronizationState = model.get('resynchronized');
 		if (resynchronizationState === 'never' || resynchronizationState === 'pending')
 		{
 			setTimeout(function() {
-				model.fetch().then(_.bind(renderIfResynchronized, null, model, callback));
+				model.fetch().then(_.bind(waitUntilResychronized, null, model, callback));
 			}, 10000);
 		}
 		else
@@ -47,6 +49,7 @@ define(function(require) {
 	return Marionette.AppRouter.extend({
 		routes: {
 			'player/:id': 'profile',
+			'player/:id/games': 'games',
 			'player/:id/game/:game': 'game',
 			'player/:id/perfect': 'perfect',
 			'player/:id/friends': 'friends'
@@ -66,12 +69,39 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				var profile = new Profile({
+				let profile = new Profile({
 					model: model
 				});
 
-				renderIfResynchronized(model, function() {
+				// Wait until synchronized, then reload
+				const resynchronizationState = model.get('resynchronized');
+				if (resynchronizationState === 'never' || resynchronizationState === 'pending')
+				{
+					waitUntilResychronized(model, function() {
+						Backbone.history.navigate('#/player/' + id, true);
+					});
+				}
+				else
+				{
 					profile.showChildView('bodyLocation', new Lists({ model: model }));
+				}
+
+				return profile;
+			}, this))
+			.fail(_.bind(this.playerUnknown, this));
+		},
+
+		games: function(id)
+		{
+			loadPlayer(id)
+			.then(screenFactory(function(model) {
+				let profile = new Profile({
+					model: model,
+					displayRecentActivity: false
+				});
+
+				waitUntilResychronized(model, function() {
+					profile.showChildView('bodyLocation', new RecentGames({ model: model }));
 				});
 
 				return profile;
@@ -87,7 +117,7 @@ define(function(require) {
 					model: model
 				});
 
-				renderIfResynchronized(model, function() {
+				waitUntilResychronized(model, function() {
 					var game = new Game({
 						id: appid
 					});
@@ -110,11 +140,11 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				var profile = new Profile({
+				const profile = new Profile({
 					model: model
 				});
 
-				renderIfResynchronized(model, function() {
+				waitUntilResychronized(model, function() {
 					profile.showChildView('bodyLocation', new PerfectGames({ model: model }));
 				});
 
@@ -131,7 +161,7 @@ define(function(require) {
 					model: model
 				});
 
-				renderIfResynchronized(model, function() {
+				waitUntilResychronized(model, function() {
 					var friends = new Friends(null, { playerId: id });
 
 					var friendsModel = new Backbone.Model({
@@ -139,11 +169,12 @@ define(function(require) {
 					});
 
 					var view = new Marionette.View({
-						template: _.template('<div id="friends"></div><p>And <%- friends %> other friend(s)...</p>'),
+						template: _.template('<h5>Friends</h5><div id="friends"></div><div id="friendsfooter"></div>'),
 						model: friendsModel,
 
 						regions: {
-							friendsLocation: '#friends'
+							friendsLocation: '#friends',
+							friendsFooterLocation: '#friendsfooter'
 						}
 					});
 
@@ -153,17 +184,32 @@ define(function(require) {
 					});
 
 					view.on('render', function() {
-						this.showChildView('friendsLocation', new Marionette.NextCollectionView({
-							collection: friends,
-							tagName: 'ul',
-							className: '',
-							childView: Marionette.View,
-							childViewOptions: {
-								tagName: 'li',
-								className: 'list-item',
-								template: friendTemplate
-							}
-						}));
+						if (friends.isEmpty())
+						{
+							this.showChildView('friendsLocation', new Marionette.View({
+								template: _.template('<p class="center">None of this users <%- friends %> friend(s) are known. Invite them to join!</p>'),
+								model: friendsModel
+							}));
+						}
+						else
+						{
+							this.showChildView('friendsLocation', new Marionette.NextCollectionView({
+								collection: friends,
+								tagName: 'ul',
+								className: '',
+								childView: Marionette.View,
+								childViewOptions: {
+									tagName: 'li',
+									className: 'list-item',
+									template: friendTemplate
+								}
+							}));
+
+							this.showChildView('friendsFooterLocation', new Marionette.View({
+								template: _.template('<p class="center">And <%- friends %> other friend(s), invite them to join!</p>'),
+								model: friendsModel
+							}));
+						}
 					});
 
 					profile.showChildView('bodyLocation', view);

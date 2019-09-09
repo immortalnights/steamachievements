@@ -1,10 +1,10 @@
 define(function(require) {
 	'use strict';
 
-	var Marionette = require('backbone.marionette');
-	var Header = require('player/header');
-	var template = require('tpl!player/templates/layout.html');
-	var errorTemplate = require('tpl!core/templates/errorresponse.html');
+	const Marionette = require('backbone.marionette');
+	const Header = require('player/header');
+	const template = require('tpl!player/templates/layout.html');
+	const errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	return Marionette.View.extend({
 		template: template,
@@ -22,7 +22,10 @@ define(function(require) {
 
 		onRender: function()
 		{
-			this.showChildView('headerLocation', new Header({ model: this.model }));
+			this.showChildView('headerLocation', new Header({
+				model: this.model,
+				displayRecentActivity: this.getOption('displayRecentActivity')
+			}));
 		}
 	});
 });

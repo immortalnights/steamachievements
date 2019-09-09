@@ -215,3 +215,8 @@ ul.game-list {
 	top: 0;
 	left: 0;
 }
+
+.inline {
+	display: inline-block;
+	margin: 2px;
+}

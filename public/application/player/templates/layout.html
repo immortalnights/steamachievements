@@ -3,11 +3,11 @@
 <div id="body"></div>
 
 <% if (resynchronized === 'never' || resynchronized === 'pending') { %>
-	<p class="right-align" title="<%- moment(resynchronized).format('MMMM Do YYYY, hh:mm:ss A') %>">
-		<small><%- tr("Never Resynchronized: ") %></small>
+	<p class="right-align">
+		<small title="<%- moment(resynchronized).format('MMMM Do YYYY, hh:mm:ss A') %>"><%- tr("Never Resynchronized") %></small>
 	</p>
 <% } else { %>
-	<p class="right-align" title="<%- moment(resynchronized).format('MMMM Do YYYY, hh:mm:ss A') %>">
-		<small><%- tr("Last resynchronized: ") %> <%- moment(resynchronized).fromNow() %></small>
+	<p class="right-align">
+		<small title="<%- moment(resynchronized).format('MMMM Do YYYY, hh:mm:ss A') %>"><%- tr("Last resynchronized: ") %> <%- moment(resynchronized).fromNow() %></small>
 	</p>
 <% } %>

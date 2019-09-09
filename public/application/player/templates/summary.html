@@ -1,13 +1,13 @@
 <% percentPlayed = ((games.played / games.total ) * 100); %>
 <% percentUnlocked = ((achievements.unlocked / achievements.total) * 100); %>
 
-<div class="row">
-	<div class="col s4 <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
-		<div class="value"><%- games.total %></div>
+<div class="row <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
+	<div class="col s4">
+		<div class="value"><a href="#/player/<%- id %>/games"><%- games.total %></a></div>
 		<label><%- tr("Games") %></label>
 	</div>
 
-	<div class="col s4 <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
+	<div class="col s4">
 		<div class="value">
 			<span title="Played <%- games.played %> of <%- games.total %> games">
 				<%- percentPlayed.toFixed(2) + '%' %>
@@ -16,7 +16,7 @@
 		<label><%- tr("Played") %></label>
 	</div>
 
-	<div class="col s4 <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
+	<div class="col s4">
 		<div class="value"><%- moment.duration(games.totalPlaytime, 'minutes').humanize() %></div>
 		<label><%- tr("Playtime") %></label>
 	</div>
@@ -38,18 +38,9 @@
 	</div>
 
 	<div class="col s4">
-		<div class="value"><a href="#/player/<%- id %>/friends"><%- 0 %></a></div>
+		<div class="value"><a href="#/player/<%- id %>/friends"><%- friendCount %></a></div>
 		<label><%- tr("Friends") %></label>
 	</div>
 </div>
 
-<div class="row" style="margin-top: 14px;">
-	<div class="col offset-s3 s3">
-		<div class="" id="recentgames"></div>
-		<label><%- tr("Recently Played") %></label>
-	</div>
-	<div class="col s6">
-		<div id="recentachievements"></div>
-		<label><%- tr("Recently Unlocked") %></label>
-	</div>
-</div>
+<div id="recentactivity"></div>

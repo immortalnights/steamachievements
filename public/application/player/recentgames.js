@@ -7,7 +7,7 @@ define(function(require) {
 	const gameTemplate = require('tpl!player/templates/game.html');
 
 	return Marionette.View.extend({
-		template: _.template('<h5><%- tr("Perfect Games") %> <small class="blue-grey-text text-darken-2"><%- tr("Games with all achievements unlocked.") %></small></h5><div id="gamelist"></div>'),
+		template: _.template('<h5><%- tr("Recent Games") %> <small class="blue-grey-text text-darken-2"><%- tr("Games played in the last two weeks.") %></small></h5><div id="gamelist"></div>'),
 
 		regions: {
 			listLocation: '#gamelist'
@@ -30,11 +30,11 @@ define(function(require) {
 				}
 			});
 
-			const perfectGames = new PlayerGames(null, { playerId: this.model.id });
+			const games = new PlayerGames(null, { playerId: this.model.id });
 			this.showChildView('listLocation', new GameList({
-				collection: perfectGames
+				collection: games
 			}));
-			perfectGames.fetch({ data: { 'query': 'owners.perfect=true' } });
+			games.fetch({ data: { 'order-by': 'recent DESC' } })
 		}
 	});
 });
