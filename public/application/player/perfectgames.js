@@ -34,7 +34,7 @@ define(function(require) {
 			this.showChildView('listLocation', new GameList({
 				collection: perfectGames
 			}));
-			perfectGames.fetch({ data: { 'query': 'owners.perfect=true' } });
+			perfectGames.fetch({ data: { 'query': 'perfect=true' } });
 		}
 	});
 });

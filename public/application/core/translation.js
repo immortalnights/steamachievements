@@ -23,7 +23,7 @@ define(function(require) {
 				}
 			}
 
-			console.log(replacements);
+			// console.log(replacements);
 			_.each(replacements, function(value, key) {
 				msg = msg.replace(key, value);
 			});
