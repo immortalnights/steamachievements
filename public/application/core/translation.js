@@ -13,7 +13,7 @@ define(function(require) {
 				// console.log(msg, match, obj[match[1]]);
 
 				// msg = msg.replace(match[0], obj[match[1]]);
-				if (obj[match[1]])
+				if (!_.isUndefined(obj[match[1]]))
 				{
 					replacements[match[0]] = obj[match[1]];
 				}

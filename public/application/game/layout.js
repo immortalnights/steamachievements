@@ -44,7 +44,7 @@ define(function(require) {
 				{
 					data._summary.playerUnlocked = _.countBy(achievements, function(achievement) {
 						return !_.isEmpty(achievement.players);
-					}).true;
+					}).true || 0;
 
 					data._summary.playerPercent = ((data._summary.playerUnlocked / achievements.length) * 100).toFixed(0);
 				}
