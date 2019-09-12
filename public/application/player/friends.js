@@ -46,7 +46,7 @@ define(function(require) {
 			else
 			{
 				this.showChildView('friendsLocation', new Marionette.NextCollectionView({
-					collection: friends,
+					collection: this.collection,
 					tagName: 'ul',
 					className: '',
 					childView: Marionette.View,
