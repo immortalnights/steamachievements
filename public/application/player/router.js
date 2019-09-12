@@ -3,16 +3,15 @@ define(function(require) {
 
 	const Marionette = require('backbone.marionette');
 	const Player = require('player/models/player');
-	const Games = require('player/collections/games');
-	const Friends = require('player/collections/friends');
-	const Profile = require('player/profile');
-	const Lists = require('player/gamelists');
+	const Game = require('game/models/game');
+
+	const Layout = require('player/layout');
+	const Default = require('player/default');
 	const RecentGames = require('player/recentgames');
 	const RecentAchievements = require('player/recentachievements');
 	const PerfectGames = require('player/perfectgames');
-	const Game = require('game/models/game');
 	const GameAchievements = require('game/layout');
-	const friendTemplate = require('tpl!player/templates/friend.html');
+	const Friends = require('player/friends');
 	const errorTemplate = require('tpl!core/templates/errorresponse.html');
 
 	const loadPlayer = function(id) {
@@ -71,7 +70,7 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				let profile = new Profile({
+				let profile = new Layout({
 					model: model
 				});
 
@@ -85,7 +84,7 @@ define(function(require) {
 				}
 				else
 				{
-					profile.showChildView('bodyLocation', new Lists({ model: model }));
+					profile.showChildView('bodyLocation', new Default({ model: model }));
 				}
 
 				return profile;
@@ -97,7 +96,7 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				let profile = new Profile({
+				let profile = new Layout({
 					model: model,
 					displayRecentActivity: false
 				});
@@ -115,7 +114,7 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				let profile = new Profile({
+				let profile = new Layout({
 					model: model,
 					displayRecentActivity: false
 				});
@@ -133,7 +132,7 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				var profile = new Profile({
+				let profile = new Layout({
 					model: model
 				});
 
@@ -160,7 +159,7 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				const profile = new Profile({
+				let profile = new Layout({
 					model: model
 				});
 
@@ -177,64 +176,12 @@ define(function(require) {
 		{
 			loadPlayer(id)
 			.then(screenFactory(function(model) {
-				var profile = new Profile({
+				let profile = new Layout({
 					model: model
 				});
 
 				waitUntilResychronized(model, function() {
-					var friends = new Friends(null, { playerId: id });
-
-					var friendsModel = new Backbone.Model({
-						friends: 0
-					});
-
-					var view = new Marionette.View({
-						template: _.template('<h5>Friends</h5><div id="friends"></div><div id="friendsfooter"></div>'),
-						model: friendsModel,
-
-						regions: {
-							friendsLocation: '#friends',
-							friendsFooterLocation: '#friendsfooter'
-						}
-					});
-
-					friendsModel.listenToOnce(friends, 'sync', function(collection) {
-						this.set('friends', model.get('friends') - collection.length);
-						view.render();
-					});
-
-					view.on('render', function() {
-						if (friends.isEmpty())
-						{
-							this.showChildView('friendsLocation', new Marionette.View({
-								template: _.template('<p class="center">None of this users <%- friends %> friend(s) are known. Invite them to join!</p>'),
-								model: friendsModel
-							}));
-						}
-						else
-						{
-							this.showChildView('friendsLocation', new Marionette.NextCollectionView({
-								collection: friends,
-								tagName: 'ul',
-								className: '',
-								childView: Marionette.View,
-								childViewOptions: {
-									tagName: 'li',
-									className: 'list-item',
-									template: friendTemplate
-								}
-							}));
-
-							this.showChildView('friendsFooterLocation', new Marionette.View({
-								template: _.template('<p class="center">And <%- friends %> other friend(s), invite them to join!</p>'),
-								model: friendsModel
-							}));
-						}
-					});
-
-					profile.showChildView('bodyLocation', view);
-
-					friends.fetch();
+					profile.showChildView('bodyLocation', new Friends({ player: model }));
 				});
 
 				return profile;

@@ -1,33 +1,41 @@
 <span class="game-icon-container z-depth-3">
 	<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg"/>
 </span>
-<h5>
+<h5 style="margin-bottom: 0.3rem;">
 	<a href="#/game/<%- _id %>"><%- name %></a> <a href="http://store.steampowered.com/app/<%- _id %>" target="_black"><i class="material-icons green-text">link</i></a>
 </h5>
 
-<div style="margin-bottom: 10px; display: inline-block">
-	<% if (_.isEmpty(achievements))
-	{
-		%><%- tr("No Achievements") %><%
-	}
-	else
-	{
-		var percent = ((unlockedCount / achievements.length) * 100).toFixed(0);
-		%>
-		<%- tr("Achievements: __a__ of __b__ (__c__%)", { a: unlockedCount, b: achievements.length, c: percent }) %></span>
-		<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
-			<div style="background-color: gray; width: <%- percent %>%; height: 12px;"></div>
-		</div>
-		<%
-	}
+<% if (_.isEmpty(achievements))
+{
+	%><div style="margin-bottom: 10px; display: inline-block"><%- tr("No Achievements.") %></div><%
+}
+else if (_summary.global)
+{
 	%>
-</div>
+	<div style="display: inline-block">
+		<%- tr("Total achievements: __number__", { number: achievements.length }) %> <br />
+		<%- tr("Difficulty: __maxDifficulty__% to __minDifficulty__%", _summary) %>
+	</div>
+	<%
+}
+else
+{
+	%>
+	<div style="margin-bottom: 5px; display: inline-block">
+		<%- tr("Achievements: __unlocked__ of __number__ (__percent__%)", { unlocked: _summary.playerUnlocked, number: achievements.length, percent: _summary.playerPercent }) %>
+		<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
+			<div style="background-color: gray; width: <%- _summary.playerPercent %>%; height: 12px;"></div>
+		</div>
+	</div>
+	<%
+}
+%>
 
 <hr style="border-color: #90a4ae" />
 
 <div id="unlockedachievements"></div>
 
-<hr style="border-color: #90a4ae; visibility: hidden; " />
+<hr style="border-color: #90a4ae; visibility: hidden;" />
 
 <div id="lockedachievements"></div>
 

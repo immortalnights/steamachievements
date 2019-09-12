@@ -23,28 +23,44 @@ define(function(require) {
 		{
 			const data = Marionette.View.prototype.serializeData.call(this);
 
+			data._summary = {
+				global: true,
+				playerUnlocked: null,
+				playerPercent: null,
+				minDifficulty: 0,
+				maxDifficulty: 0
+			};
+
 			const achievements = this.model.get('achievements');
-			if (_.isEmpty(achievements))
+			if (this.getOption('playerId'))
 			{
-				data.unlockedCount = 0;
+				data._summary.global = false;
+				if (_.isEmpty(achievements))
+				{
+					data._summary.playerUnlocked = 0;
+					data._summary.playerPercent = 0;
+				}
+				else
+				{
+					data._summary.playerUnlocked = _.countBy(achievements, function(achievement) {
+						return !_.isEmpty(achievement.players);
+					}).true;
+
+					data._summary.playerPercent = ((data._summary.playerUnlocked / achievements.length) * 100).toFixed(0);
+				}
 			}
-			else
-			{
-				data.unlockedCount = _.countBy(this.model.get('achievements'), function(achievement) {
-					return !_.isEmpty(achievement.players);
-				}).true;
-			}
+
+			data._summary.minDifficulty = _.min(achievements, 'percent').percent.toFixed(2);
+			data._summary.maxDifficulty = _.max(achievements, 'percent').percent.toFixed(2);
 
 			return data;
 		},
 
 		onRender: function()
 		{
-			var playerId = this.getOption('playerId');
+			const achievements = new Backbone.Collection(this.model.get('achievements'));
 
-			var achievements = new Backbone.Collection(this.model.get('achievements'));
-
-			var unlocked = new Backbone.Collection(achievements.filter(function(achievement) {
+			let unlocked = new Backbone.Collection(achievements.filter(function(achievement) {
 				return !_.isEmpty(achievement.get('players'));
 			}));
 			unlocked.each(function(achievement) {
@@ -52,7 +68,7 @@ define(function(require) {
 			});
 			// unlocked.sort();
 
-			var locked = new Backbone.Collection(achievements.filter(function(achievement) {
+			let locked = new Backbone.Collection(achievements.filter(function(achievement) {
 				return _.isEmpty(achievement.get('players'));
 			}), {
 				comparator: function(achievement) {
@@ -62,8 +78,8 @@ define(function(require) {
 			locked.each(function(achievement) {
 				achievement.set('unlocked', false);
 			});
-			locked.sort();
 
+			locked.sort();
 
 			this.showChildView('unlockedAchievementsLocation', new Marionette.NextCollectionView({
 				className: 'achievement-list',

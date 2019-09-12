@@ -20,6 +20,7 @@ define(function(require) {
 
 		onRender: function()
 		{
+			// FIME - use GameList!
 			let recentGames = new Backbone.Collection(this.model.get('recentGames'));
 			let recentAchievements = new Backbone.Collection(this.model.get('recentAchievements'));
 			recentAchievements.each(function(game) {

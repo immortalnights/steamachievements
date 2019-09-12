@@ -22,12 +22,18 @@ require.config({
 	}
 });
 
+let once = false;
+
 requirejs(['application', 'jquery', 'underscore', 'moment',/*'fontawesome', 'fontawesome-solid', 'fontawesome-regular', 'fontawesome-brands'*/], function(application, $, _, moment) {
 	'use strict';
 
 	const app = application();
 	_.defer(app.start.bind(app));
 }, function(err) {
-	document.getElementsByTagName('body')[0].innerHTML = err;
-	console.error(err);
+	if (!once)
+	{
+		once = true;
+		document.getElementsByTagName('body')[0].innerHTML = '<div class="error">' + err + '</div>';
+		console.error(err);
+	}
 });

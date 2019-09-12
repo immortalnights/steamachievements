@@ -8,7 +8,6 @@ define(function(require) {
 	const viewmixin = require('core/viewmixin');
 	const translation = require('core/translation');
 	const moment = require('moment');
-	const rootTemplate = require('tpl!core/templates/root.html');
 
 	const Application = Marionette.Application.extend({
 		region: 'main',
@@ -25,14 +24,6 @@ define(function(require) {
 					sameElse : 'L [at] LT'
 				}
 			});
-			// this.showView(new Marionette.View({
-			// 	template: rootTemplate,
-
-			// 	regions: {
-			// 		navLocation: '#nav',
-			// 		mainLocation: 'main'
-			// 	}
-			// }));
 
 			new Router();
 			new PlayerRouter();
@@ -44,8 +35,6 @@ define(function(require) {
 		showScreen: function(view)
 		{
 			console.assert(view instanceof Marionette.View);
-
-			// this.getView().showChildView('mainLocation', view);
 			this.showView(view);
 		}
 	});

@@ -2,7 +2,7 @@ define(function(require) {
 	'use strict';
 
 	const Marionette = require('backbone.marionette');
-	const List = require('core/views/list');
+	const GameList = require('core/views/gamelist');
 	const PlayerAchievements = require('player/collections/achievements');
 	const gameTemplate = require('tpl!player/templates/gamewithachievements.html');
 
@@ -20,19 +20,13 @@ define(function(require) {
 
 		onRender: function()
 		{
-			const GameList = List.extend({
-				className: 'game-achievement-list',
-				childViewOptions: _.defaults({
-					template: gameTemplate,
-				}, List.prototype.childViewOptions),
-				emptyViewOptions: {
-					template: _.template('<%- tr("No games to display.") %>')
-				}
-			});
-
 			const games = new PlayerAchievements(null, { playerId: this.model.id });
 			this.showChildView('listLocation', new GameList({
-				collection: games
+				className: '', // don't use default class
+				collection: games,
+				childViewOptions: _.defaults({
+					template: gameTemplate,
+				}, GameList.prototype.childViewOptions),
 			}));
 			games.fetch({ data: { 'order-by': 'recent DESC' } })
 		}
