@@ -15,9 +15,9 @@ const resynchronizePlayerFactory = function(playerId, database, steam) {
 		return new Promise(function(resolve, reject) {
 			const player = new Player(playerId, database, steam);
 
-			player.run().
-			then(function() {
-				console.log("completed resynchronization of", playerId)
+			player.update()
+			.then(function() {
+				console.log("Completed resynchronization of", playerId)
 				resolve(playerId);
 			})
 			.catch(function(err) {
@@ -77,8 +77,8 @@ module.exports = class Service {
 
 	run()
 	{
-		const scheduleTask = function() {
-			console.log("executing schedule task");
+		const scheduleTask = () => {
+			console.log("Executing schedule task");
 
 			try
 			{
@@ -90,10 +90,10 @@ module.exports = class Service {
 				console.error("Failed to execute schedule tasks", err);
 			}
 
-			setTimeout(scheduleTask.bind(this), SCHEDULE);
+			setTimeout(scheduleTask, SCHEDULE);
 		};
 
-		scheduleTask.call(this);
+		scheduleTask();
 	}
 
 	// identifies players which require updating, queues the resynchronizations and starts the queue
@@ -119,11 +119,12 @@ module.exports = class Service {
 
 				// Individual resynchronizations will delay the queue completion
 				queue.once('end', function(err) {
-					console.log("Queue completed");
+					console.log("Player queue completed");
 					resolve();
 				});
 
 				// passing a callback to start will cause the queue to stop on error
+				// If this doesn't appear to do anything, be sure to enable debug logging
 				queue.start();
 			})
 			.catch(function(err) {
@@ -167,7 +168,7 @@ module.exports = class Service {
 
 		if (this.triggeredResynchronizations[playerId])
 		{
-			console.log("Resynchronization for '" + playerId + "' is already in progress");
+			console.log("Resynchronization for '%s' is already in progress", playerId);
 		}
 		else
 		{
@@ -209,6 +210,11 @@ module.exports = class Service {
 		});
 	}
 
+	resynchronizeGame(id)
+	{
+
+	}
+
 	// fetch schema for recently registered games or games flagged as requiring an update
 	// resynchronize global achievements for a game if it has not been updated in a week or has been flagged
 	resynchronizeGames()
@@ -220,21 +226,21 @@ module.exports = class Service {
 					{
 						const game = new Game(id, db, steam);
 
-						game.run()
+						game.update()
 						.then(function(game) {
 							// Note game name within the Schema is unreliable
-							console.log("completed resynchronization of '%s' (%i)", game.name, game.id)
+							console.log("Completed resynchronization of '%s' (%i)", game.name, game.id)
 							resolve(id);
 						})
 						.catch(function(err) {
-							console.error("failed to resynchronize game", id);
+							console.error("Failed to resynchronize game", id);
 							console.error(err);
 							reject(err);
 						});
 					}
 					catch (err)
 					{
-						console.log("err")
+						console.log("err", err)
 						reject(err);
 					}
 				});
@@ -245,9 +251,9 @@ module.exports = class Service {
 			const queue = new Queue({
 				concurrency: 3
 			});
+
 			const weekAgo = moment().add(-7, 'days');
 			const query = {
-				achievements: { $ne: false },
 				$or: [{
 					resynchronized: 'never'
 				}, {
@@ -257,10 +263,15 @@ module.exports = class Service {
 
 			this.db.getGames(query)
 			.then((documents) => {
-				console.log("found %i game(s) which requires updating", documents.length);
+				console.log("Found %i game(s) which requires updating", documents.length);
 
 				documents.forEach((doc, index) => {
 					queue.push(resynchronizeGameFactory(doc._id, this.db, this.steam));
+				});
+
+				queue.once('end', function(err) {
+					console.log("Game queue completed");
+					resolve();
 				});
 
 				queue.on('error', function(err, task) {
@@ -268,13 +279,10 @@ module.exports = class Service {
 				});
 
 				// console.log("start processing game queue", queue.length);
-				queue.start(function() {
-					console.log("game queue completed");
-					resolve();
-				});
+				queue.start();
 			})
 			.catch(function(err) {
-				console.error("failed to resynchronize games", err);
+				console.error("Failed to resynchronize games", err);
 				reject(err);
 			});
 		});

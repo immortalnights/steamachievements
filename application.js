@@ -27,13 +27,30 @@ db.connect(config.database)
 	web.on('message', function(message) {
 		console.log("received message from `web`", message);
 
-		if (message.registered)
+		switch (message.action)
 		{
-			service.resynchronizePlayer(message.registered);
-		}
-		else if (message.resynchronize)
-		{
-			service.resynchronizePlayer(message.resynchronize, message.force);
+			case 'registered':
+			{
+				service.resynchronizePlayer(message.id);
+				break;
+			}
+			case 'resynchronize':
+			{
+				switch (message.resource)
+				{
+					case 'player':
+					{
+						service.resynchronizePlayer(message.id, false);
+						break
+					}
+					case 'game':
+					{
+						service.resynchronizeGame(message.id);
+						break;
+					}
+				}
+				break;
+			}
 		}
 	});
 
