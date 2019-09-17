@@ -7,16 +7,14 @@ const Database = require('./lib/database');
 const Steam = require('./lib/steam');
 const playerRouterFactory = require('./lib/routers/player');
 const gameRouterFactory = require('./lib/routers/game');
+const core = require('./lib/core');
 
 process.on('unhandledRejection', (reason, p) => {
-	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+	console.log('Unhandled Rejection: Promise', p, 'reason:', reason);
 });
 
-const db = new Database(config.database.name);
-const steam = new Steam(config.steamAPIKey);
-
-db.connect(config.database)
-.then(() => {
+core.start(config)
+.then(function(result) {
 	const app = express();
 
 	// JSON middleware
@@ -40,8 +38,8 @@ db.connect(config.database)
 
 	// Apply API router
 	app.use('/api', router);
-	app.use('/api', playerRouterFactory(db, steam));
-	app.use('/api', gameRouterFactory(db, steam));
+	app.use('/api', playerRouterFactory(...result));
+	app.use('/api', gameRouterFactory());
 
 	app.use(express.static('public', {
 		maxAge: '1d'
@@ -52,7 +50,7 @@ db.connect(config.database)
 
 	try
 	{
-		const port = config.HTTPPort || 8080
+		const port = config.HTTPPort || 8080;
 		console.log("Starting express server on", port);
 		app.listen(port, () => console.log("Listening on port", port));
 	}
@@ -61,8 +59,9 @@ db.connect(config.database)
 		console.error("Failed to start Express", err);
 	}
 })
-.catch((error) => {
-	console.error("Error", error);
-	console.log(error);
-	// todo exit
+.catch(function(err) {
+	console.error("Failed to connect to databse");
+	console.error(err);
+	// TODO fix db connection error not closing / exiting automatically
+	process.exit(1);
 });

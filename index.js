@@ -1,30 +1,24 @@
 'use strict';
 
 const subprocess = require('child_process')
-const Database = require('./lib/database');
-const Steam = require('./lib/steam');
-const Service = require('./service');
+const Service = require('./service2');
 const config = require('./config.json');
+const core = require('./lib/core');
 
-const db = new Database(config.database.name);
-const steam = new Steam(config.steamAPIKey);
-
-process.on('unhandledRejection', (reason, p) => {
-	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+process.on('unhandledRejection', function(reason, p) {
+	console.log('Unhandled Rejection: Promise', p, 'reason:', reason);
 });
 
-db.connect(config.database)
+core.start(config)
 .then(function() {
-	return db.initialize();
-})
-.then(function() {
+	console.log("Startup successful");
 
 	// fork the web server (API and UI)
 	const web = subprocess.fork('./web.js');
 	// initalize the service
-	const service = new Service(db, steam);
+	const service = new Service();
 
-	web.on('message', function(message) {
+	web.on('message', (message) => {
 		console.log("received message from `web`", message);
 
 		switch (message.action)
@@ -40,7 +34,7 @@ db.connect(config.database)
 				{
 					case 'player':
 					{
-						service.resynchronizePlayer(message.id, false);
+						service.resynchronizePlayer(message.id);
 						break
 					}
 					case 'game':
@@ -58,6 +52,7 @@ db.connect(config.database)
 	service.run();
 })
 .catch(function(err) {
+	console.error("Failed to connect to databse or Steam");
 	console.error(err);
 	// TODO fix db connection error not closing / exiting automatically
 	process.exit(1);
