@@ -16,7 +16,7 @@ module.exports = class Service {
 	{
 		this.queue = new Queue(async function(task, cb) {
 			debug("Processing task '%s'", task.id);
-			const result = await task.fn(task.ref);
+			const result = await task.fn(...task.args);
 
 			// If an error is returned, fail the task, otherwise it's successful
 			cb(result instanceof Error ? result : null, result);
@@ -82,7 +82,6 @@ module.exports = class Service {
 			// setTimeout(scheduleTask, SCHEDULE);
 		};
 
-
 		// scheduleTask();
 	}
 
@@ -90,7 +89,7 @@ module.exports = class Service {
 	{
 		return this.queue.push({
 			id: 'resynchronize_player_' + doc._id,
-			ref: doc._id,
+			args: [doc._id],
 			fn: this.resynchronizePlayer.bind(this)
 		});
 	}
@@ -99,7 +98,7 @@ module.exports = class Service {
 	{
 		return this.queue.push({
 			id: 'resynchronize_game_' + doc.id,
-			ref: doc.id,
+			args: [doc.id],
 			fn: this.resynchronizeGame.bind(this)
 		});
 	}
@@ -107,7 +106,7 @@ module.exports = class Service {
 	async resynchronizePlayers()
 	{
 		const yesterday = moment().add(-1, 'days');
-		
+
 		return database.instance.getPlayers({
 			'steam.communityvisibilitystate': 3,
 				$or: [{
@@ -123,7 +122,7 @@ module.exports = class Service {
 				// debug(doc);
 				this.queue.push({
 					id: 'resynchronize_player_' + doc._id,
-					ref: doc._id,
+					args: [doc._id],
 					fn: this.resynchronizePlayer.bind(this)
 				});
 			});
@@ -150,7 +149,7 @@ module.exports = class Service {
 				// debug(doc);
 				this.queue.push({
 					id: 'resynchronize_game_' + doc._id,
-					ref: doc._id,
+					args: [doc._id],
 					fn: this.resynchronizeGame.bind(this)
 				});
 			});
@@ -169,6 +168,23 @@ module.exports = class Service {
 
 		if (result && player.canResynchronize())
 		{
+			// listen for events to resynchronize games
+			player.on('resynchronize_game', (task) => {
+				console.assert(task.args.length === 1, "Game resynchronization event invalid");
+
+				task.fn = this.resynchronizeGame.bind(this);
+				debug("Queuing game resynchronization");
+				this.queue.push(task);
+			});
+
+			player.on('resynchronize_game_achievements', (task) => {
+				console.assert(task.args.length === 2, "Player game achievement resynchronization event invalid");
+
+				task.fn = this.resynchronizePlayerAchievements.bind(this);
+				debug("Queuing player achievement resynchronization");
+				this.queue.push(task);
+			});
+
 			result = await player.update();
 		}
 		else
@@ -183,6 +199,12 @@ module.exports = class Service {
 	async resynchronizeGame(id)
 	{
 		debug("Resynchronize game '%s'", id);
+		return Promise.resolve(1);
+	}
+
+	async resynchronizePlayerAchievements(id, appid)
+	{
+		debug("Resynchronize player '%s' game '%s' achievements", id, appid);
 		return Promise.resolve(1);
 	}
 };

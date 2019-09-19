@@ -34,7 +34,7 @@ define(function(require) {
 		getTemplate: function()
 		{
 			let template = _.template('');
-			
+
 			switch (this.model.get('state'))
 			{
 				case 'default':
@@ -75,13 +75,7 @@ define(function(require) {
 		}, List.prototype.childViewOptions),
 
 		emptyView: EmptyView,
-		emptyViewOptions: function() {
-			return {
-				model: new Backbone.Model({
-					state: 'loading'
-				})
-			};
-		},
+		emptyViewOptions: null,
 
 		initialize: function(options)
 		{
@@ -89,7 +83,12 @@ define(function(require) {
 
 			console.assert(this.collection, "Games list missing games collection");
 			this.childViewOptions.playerId = this.collection.options.playerId;
-			this.emptyViewOptions.collection = this.collection;
+			this.emptyViewOptions = {
+				collection: this.collection,
+				model: new Backbone.Model({
+					state: 'loading'
+				})
+			};
 		},
 	});
 });

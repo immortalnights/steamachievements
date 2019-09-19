@@ -1,5 +1,6 @@
 'use strict';
 
+const debug = require('debug')('service');
 const subprocess = require('child_process')
 const Service = require('./service2');
 const config = require('./config.json');
@@ -19,7 +20,7 @@ core.start(config)
 	const service = new Service();
 
 	web.on('message', (message) => {
-		console.log("received message from `web`", message);
+		debug("received message from `web`", message);
 
 		switch (message.action)
 		{

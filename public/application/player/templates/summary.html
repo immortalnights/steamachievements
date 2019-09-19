@@ -1,9 +1,9 @@
-<% percentPlayed = ((games.played / games.total ) * 100); %>
-<% percentUnlocked = ((achievements.unlocked / achievements.total) * 100); %>
+<% percentPlayed = _.isEmpty(games) ? 0 : ((games.played / games.total ) * 100); %>
+<% percentUnlocked = _.isEmpty(achievements) ? 0 : ((achievements.unlocked / achievements.total) * 100); %>
 
 <div class="row <%- obj.id === '76561198013854782' ? 'hide' : '' %>">
 	<div class="col s4">
-		<div class="value"><a href="#/player/<%- id %>/games" title="<%- tr('View recent games') %>"><%- games.total %></a></div>
+		<div class="value"><a href="#/player/<%- id %>/games" title="<%- tr('View recent games') %>"><%- games.total || 0 %></a></div>
 		<label><%- tr("Games") %></label>
 	</div>
 
@@ -15,21 +15,23 @@
 	</div>
 
 	<div class="col s4">
-		<div class="value"><%- moment.duration(games.totalPlaytime, 'minutes').humanize() %></div>
+		<div class="value"><%- games.totalPlaytime ? moment.duration(games.totalPlaytime, 'minutes').humanize() : '-' %></div>
 		<label><%- tr("Playtime") %></label>
 	</div>
 </div>
 
 <div class="row">
 	<div class="col s4">
-		<div class="value"><a href="#/player/<%- id %>/perfect" title="<%- tr('View perfected games') %>"><%- games.perfected %></a></div>
+		<div class="value"><a href="#/player/<%- id %>/perfect" title="<%- tr('View perfected games') %>"><%- games.perfected || 0 %></a></div>
 		<label><%- tr("Perfect Games") %></label>
 	</div>
 
 	<div class="col s4">
 		<div class="value">
 			<a href="#/player/<%- id %>/achievements" title="<%- tr('View recent achievements') %>"><%- percentUnlocked.toFixed(2) + '%' %></a>
+			<% if (_.isEmpty(achievements) == false) { %>
 			<span title="Unlocked <%- achievements.unlocked %> of <%- achievements.total %> achievements" style="cursor: help;"><i class="material-icons tiny dp48">info_outline</i></span>
+			<% } %>
 		</div>
 		<label><%- tr("Achievements Unlocked") %></a></label>
 	</div>
