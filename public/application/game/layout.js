@@ -14,6 +14,10 @@ define(function(require) {
 			lockedAchievementsLocation: '#lockedachievements'
 		},
 
+		events: {
+			'click a[data-control="resynchronize"]': 'onResychronize'
+		},
+
 		initialize: function(options)
 		{
 			Marionette.View.prototype.initialize.call(this, options)
@@ -31,6 +35,7 @@ define(function(require) {
 				maxDifficulty: 0
 			};
 
+
 			const achievements = this.model.get('achievements');
 			if (this.getOption('playerId'))
 			{
@@ -42,16 +47,24 @@ define(function(require) {
 				}
 				else
 				{
-					data._summary.playerUnlocked = _.countBy(achievements, function(achievement) {
-						return !_.isEmpty(achievement.players);
-					}).true || 0;
+					const unlockedAchievements = _.filter(achievements, function(achievement) { return achievement.unlocked; });
+
+					data._summary.playerUnlocked = unlockedAchievements.length;
 
 					data._summary.playerPercent = ((data._summary.playerUnlocked / achievements.length) * 100).toFixed(0);
 				}
 			}
 
-			data._summary.minDifficulty = _.min(achievements, 'percent').percent.toFixed(2);
-			data._summary.maxDifficulty = _.max(achievements, 'percent').percent.toFixed(2);
+			if (_.isEmpty(achievements))
+			{
+				data._summary.minDifficulty = 0;
+				data._summary.maxDifficulty = 0;
+			}
+			else
+			{
+				data._summary.minDifficulty = _.min(achievements, 'percent').percent.toFixed(2);
+				data._summary.maxDifficulty = _.max(achievements, 'percent').percent.toFixed(2);
+			}
 
 			return data;
 		},
@@ -61,23 +74,23 @@ define(function(require) {
 			const achievements = new Backbone.Collection(this.model.get('achievements'));
 
 			let unlocked = new Backbone.Collection(achievements.filter(function(achievement) {
-				return !_.isEmpty(achievement.get('players'));
+				return achievement.get('unlocked') !== false;
 			}));
-			unlocked.each(function(achievement) {
-				achievement.set('unlocked', true);
-			});
+			// unlocked.each(function(achievement) {
+			// 	achievement.set('unlocked', true);
+			// });
 			// unlocked.sort();
 
 			let locked = new Backbone.Collection(achievements.filter(function(achievement) {
-				return _.isEmpty(achievement.get('players'));
+				return achievement.get('unlocked') === false;
 			}), {
 				comparator: function(achievement) {
 					return -achievement.get('percent');
 				}
 			});
-			locked.each(function(achievement) {
-				achievement.set('unlocked', false);
-			});
+			// locked.each(function(achievement) {
+			// 	achievement.set('unlocked', false);
+			// });
 
 			locked.sort();
 
@@ -98,6 +111,17 @@ define(function(require) {
 					template: achievementTemplate
 				}
 			}));
+		},
+
+		onResychronize: function()
+		{
+			const playerId = this.getOption('playerId');
+			if (playerId)
+			{
+				data = { playerId: playerId };
+			}
+
+			this.model.resynchronize();
 		}
 	});
 });

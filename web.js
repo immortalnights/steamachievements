@@ -38,7 +38,7 @@ core.start(config)
 
 	// Apply API router
 	app.use('/api', router);
-	app.use('/api', playerRouterFactory(...result));
+	app.use('/api', playerRouterFactory());
 	app.use('/api', gameRouterFactory());
 
 	app.use(express.static('public', {

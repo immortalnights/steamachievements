@@ -1,44 +1,169 @@
-<span class="game-icon-container z-depth-3">
-	<img alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg"/>
-</span>
-<h5 style="margin-bottom: 0.3rem;">
-	<a href="#/game/<%- _id %>"><%- name %></a> <a href="http://store.steampowered.com/app/<%- _id %>" target="_black"><i class="material-icons green-text">link</i></a>
-</h5>
+<style type="text/css">
+	.flex-container {
+		display: flex;
+	}
 
-<% if (_.isEmpty(achievements))
-{
-	%><div style="margin-bottom: 10px; display: inline-block"><%- tr("No Achievements.") %></div><%
-}
-else if (_summary.global)
-{
-	%>
-	<div style="display: inline-block">
-		<%- tr("Total achievements: __number__", { number: achievements.length }) %> <br />
-		<%- tr("Difficulty: __maxDifficulty__% to __minDifficulty__%", _summary) %>
-	</div>
-	<%
-}
-else
-{
-	%>
-	<div style="margin-bottom: 5px; display: inline-block">
-		<%- tr("Achievements: __unlocked__ of __number__ (__percent__%)", { unlocked: _summary.playerUnlocked, number: achievements.length, percent: _summary.playerPercent }) %>
-		<div style="background-color: black; width: 100%; height: 16px; border: 1px solid lightgray; border-radius: 2px; padding: 1px;">
-			<div style="background-color: gray; width: <%- _summary.playerPercent %>%; height: 12px;"></div>
+	.flex-container.space-between {
+		justify-content: space-between;
+	}
+
+	.flex-container.space-evenly {
+		justify-content: space-evenly;
+	}
+
+	.flex-container .flex-grow {
+		flex-grow: 1;
+		justify-content: space-around;
+	}
+
+	.flex-wrap {
+		flex-wrap: wrap;
+	}
+
+	.flex-wrapr {
+		flex-wrap: wrap-reverse;
+	}
+
+	.game-title {
+		margin: 0;
+	}
+	.game-icon {
+		box-shadow: 0 8px 17px 2px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12), 0 5px 5px -3px rgba(0,0,0,0.2);
+		border: 1px solid black;
+	}
+
+	.progress-bar {
+		height: 16px;
+		padding: 1px;
+		min-width: 90%;
+		max-width: 200px;
+		background-color: black;
+		border: 1px solid lightgray;
+		border-radius: 2px;
+		display: inline-block;
+	}
+
+	.progress-bar > span {
+		background-color: gray;
+		height: 12px;
+		display: block;
+	}
+
+	.no-wrap {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.progress-bar.perfect {
+		border-color: white;
+		box-shadow: 0px 0px 8px 0px gold;
+		margin-bottom: 4px;
+	}
+
+	.progress-bar.perfect > span {
+		background-color: gold;
+	}
+</style>
+
+
+
+<div class="flex-container space-between flex-wrapr">
+	<div class="flex-grow">
+		<h5 class="game-title">
+			<a href="#/game/<%- _id %>"><%- name %></a> <a href="http://store.steampowered.com/app/<%- _id %>" target="_black"><i class="material-icons green-text">link</i></a>
+		</h5>
+		<div class="flex-container space-evenly flex-wrap">
+			<div class="no-wrap">
+				<% if (obj.owner) { %>
+					<%- tr("Added __d__", { d: moment(obj.owner).calendar() }) %>
+					</br>
+					<%
+						function formatPlaytime(t) { return (t < 60) ? (t + ' minutes') : (Math.floor(t / 60) + ' hours') }
+						var recent = _.max(owner.playtime_2weeks, function(item) { return item.value; }).value || 0;
+					%>
+
+					<% if (recent) { %>
+						<%- tr("Playtime __t__ and __r__ recently", { t: formatPlaytime(owner.playtime_forever), r: formatPlaytime(recent) }) %>
+					<% } else { %>
+						<%- tr("Playtime __t__ total", { t: formatPlaytime(owner.playtime_forever) }) %>
+					<% } %>
+				<% } %>
+			</div>
+
+			<% if (_.isEmpty(achievements))
+			{
+				%><div class="no-wrap"><%- tr("No Achievements.") %></div><%
+			}
+			else if (_summary.global)
+			{
+				%>
+				<div class="no-wrap">
+					<%- tr("Total achievements: __number__", { number: achievements.length }) %>
+					<br />
+					<%- tr("Difficulty: __maxDifficulty__% to __minDifficulty__%", _summary) %>
+				</div>
+				<%
+			}
+			else
+			{
+				%>
+				<div class="no-wrap center-align">
+					<%- tr("Achievements: __unlocked__ of __number__ (__percent__%)", { unlocked: _summary.playerUnlocked, number: achievements.length, percent: _summary.playerPercent }) %>
+					</br>
+					<span class="progress-bar <%- owner.perfect ? 'perfect' : '' %>">
+						<span style="width: <%- _summary.playerPercent %>%;"></span>
+					</span>
+				</div>
+				<%
+			}
+			%>
 		</div>
 	</div>
-	<%
-}
-%>
+
+	<div class="right-align">
+		<a href="#/game/<%- _id %>">
+			<img class="game-icon" alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg"/>
+		</a>
+	</div>
+</div>
 
 <hr style="border-color: #90a4ae" />
 
+<div class="flex-container space-evenly" style="display: none; margin-bottom: 1em;">
+	<div>
+		Grouping
+		<div class="switch">
+			<label>
+				None
+				<input type="checkbox" name="group" checked />
+				<span class="lever"></span>
+				Status
+			</label>
+		</div>
+	</div>
+	<div>
+		Sort </br>
+		<label><input name="sort" type="radio" class="" checked /><span>Unlock time</span></label>
+		<label><input name="sort" type="radio" class="" /><span>Alphabetical</span></label>
+		<label><input name="sort" type="radio" class="" /><span>Difficulty</span></label>
+	</div>
+</div>
+
+<h6 style="display: none;"><%- tr("Unlocked Achievements - ordered by unlock time") %></h6>
 <div id="unlockedachievements"></div>
 
 <hr style="border-color: #90a4ae; visibility: hidden;" />
 
+<h6 style="display: none;"><%- tr("Locked Achievements - ordered by difficulty") %></h6>
 <div id="lockedachievements"></div>
 
-<p class="right-align">
-	<a href="http://steamcommunity.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank"><%- tr("View Achievements on Steam") %></a>
+<% if (_.isEmpty(obj.achievements) == false) { %>
+	<p class="right-align">
+		<a href="http://steamcommunity.com/stats/<%- obj.appid || obj._id %>/achievements" target="_blank"><%- tr("View Achievements on Steam") %></a>
+	</p>
+<% } %>
+
+<p class="center-align">
+	<small><a data-control="resynchronize" class="blue-grey-text lighten-5" style="cursor: pointer;"><%- tr("Resynchronize game data") %></a></small>
 </p>

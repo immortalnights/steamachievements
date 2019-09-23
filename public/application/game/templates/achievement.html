@@ -1,6 +1,7 @@
+<% console.log(obj); %>
 <div class="icon">
 	<!-- FIXME - some achievements don't have a valid gray icon image -->
-	<% if (unlocked) { %>
+	<% if (obj.unlocked) { %>
 		<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" alt="<%- displayName %>" src="<%- icon %>" />
 	<% } else { %>
 		<img class="achievement-icon <%- (obj.smallIcon === true ? 'small' : '') %>" alt="<%- displayName %>" src="<%- icongray %>" />
@@ -12,8 +13,8 @@
 		<div class="percentage-bar" style="width: <%- percent.toFixed(1) %>%;"></div>
 		<span class="percentage right-align">
 			<%- percent.toFixed(1) %>%
-			<% if (unlocked) { %>
-				<br /><%- formatUnixTimestamp(players[_.keys(players)[0]]) %>
+			<% if (obj.unlocked) { %>
+				<br /><%- moment(unlocked).calendar() %>
 			<% } %>
 		</span>
 	<% } %>

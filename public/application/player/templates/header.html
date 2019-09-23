@@ -7,7 +7,9 @@
 		</div>
 	</div>
 	<div class="col s9 m10">
+		<% if (/^player\/[0-9]+$/.exec(Backbone.history.fragment)) { %>
 		<button data-control="resynchronize" class="btn-flat right blue-grey-text lighten-5"><i class="material-icons">refresh</i></button>
+		<% } %>
 		<h4 class="persona-name blue-grey-text lighten-5">
 			<a href="#/player/<%- id %>"><%- personaname %></a>
 			<a href="<%- steam.profileurl %>" title="<%- tr('View on Steam') %>" target="_blank"><i class="material-icons green-text">link</i></a>

@@ -141,12 +141,15 @@ define(function(require) {
 						id: appid
 					});
 
-					game.fetch({ data: { players: id }})
+					game.fetch({ data: { player: id }})
 					.then(function() {
 						profile.showChildView('bodyLocation', new GameAchievements({
 							playerId: id,
 							model: game
 						}));
+					})
+					.catch(function(err) {
+						console.error(err);
 					});
 				});
 

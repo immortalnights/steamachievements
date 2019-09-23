@@ -26,7 +26,7 @@ core.start(config)
 		{
 			case 'registered':
 			{
-				service.resynchronizePlayer(message.id);
+				service.queueResynchronizeNewPlayer(message.id);
 				break;
 			}
 			case 'resynchronize':
@@ -35,12 +35,12 @@ core.start(config)
 				{
 					case 'player':
 					{
-						service.resynchronizePlayer(message.id);
+						service.queueResynchronizePlayer(message.id);
 						break
 					}
 					case 'game':
 					{
-						service.resynchronizeGame(message.id);
+						service.queueResynchronizeGame(message.id);
 						break;
 					}
 				}
