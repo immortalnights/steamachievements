@@ -58,6 +58,7 @@ define(function(require) {
 			loadGame(id)
 			.then(screenFactory(function(model) {
 				return new Layout({
+					className: 'section',
 					model: model
 				});
 			}, this))

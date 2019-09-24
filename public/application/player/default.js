@@ -46,11 +46,10 @@ define(function(require) {
 
 			const easiestAchievements = new PlayerAchievements(null, { playerId: this.model.id });
 			this.showChildView('easiestAchievementsLocation', new GameList({
-				className: 'row',
+				className: 'game-achievement-list',
 				collection: easiestAchievements,
 				childViewOptions: _.defaults({
-					template: achievementTemplate,
-					className: 'col s6',
+					template: achievementTemplate
 				}, GameList.prototype.childViewOptions)
 			}));
 			easiestAchievements.fetch({ data: { 'order-by': 'globalPercentage DESC' } });

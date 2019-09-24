@@ -55,6 +55,33 @@ a:hover {
 	color: white;
 }
 
+
+.flex-container {
+	display: flex;
+}
+
+.flex-container.space-between {
+	justify-content: space-between;
+}
+
+.flex-container.space-evenly {
+	justify-content: space-evenly;
+}
+
+.flex-container .flex-grow {
+	flex-grow: 1;
+	justify-content: space-around;
+}
+
+.flex-wrap {
+	flex-wrap: wrap;
+}
+
+.flex-wrapr {
+	flex-wrap: wrap-reverse;
+}
+
+
 .profile-header {
 	margin-top: 5px;
 }
@@ -79,8 +106,9 @@ a:hover {
 	font-family: 'Motiva Sans';
 }
 
-.summary-statistics .row {
-	margin-bottom: 0;
+.summary-statistics .item {
+	width: 33%;
+	min-width: 128px;
 }
 
 .summary-statistics .value{
@@ -88,7 +116,7 @@ a:hover {
 	line-height: 1em;
 }
 
-.summary-statistics label{
+.summary-statistics label {
 	font-size: 1em;
 	display: block;
 	color: #9b9b9b;
@@ -96,7 +124,18 @@ a:hover {
 	line-height: 1em;
 }
 
-ul.game-list > li {
+
+.game-list {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: start;
+}
+
+.game-list > div {
+	margin: 0px 4px;
+}
+
+/*ul.game-list > li {
 	display: inline-block;
 	margin: 0 4px;
 }
@@ -107,7 +146,7 @@ ul.game-list.single-row > li:first-child {
 
 ul.game-list {
 	margin: 0;
-}
+}*/
 
 .view-more-link-container {
 	text-align: right;
@@ -150,54 +189,6 @@ ul.game-list {
 	border: 1px solid black;
 }
 
-.achievement-list > div {
-	display: flex;
-	flex-direction: row;
-	margin-bottom: 5px;
-}
-
-.achievement-list .icon {
-	margin-right: 10px;
-	flex: 0 0 0;
-}
-
-.achievement-list .global-percentage {
-	position: relative;
-	border: 1px solid #455a64;
-	flex: 1 0 0;
-	/* FIXME - shouldn't need to force the height - doesn't allow text to wrap */
-	height: 64px;
-	overflow: hidden;
-}
-
-.achievement-list .global-percentage .description {
-	color: #90a4ae;
-	padding: 0 1rem;
-}
-
-.achievement-list .global-percentage .description h5 {
-	margin: 0.7rem 0 0;
-}
-
-.achievement-list .global-percentage .description p {
-	margin: 0;
-}
-
-.achievement-list .global-percentage .percentage-bar {
-	position: absolute;
-	top: 0px;
-	bottom: 0px;
-	margin: 2px;
-	background-color: #455a64;
-	z-index: -1;
-}
-
-.achievement-list .global-percentage .percentage {
-	float: right;
-	margin-top: 0.7rem;
-	margin-right: 10px;
-}
-
 .list-item {
 	width: 25%;
 	display: inline-block;
@@ -232,4 +223,10 @@ ul.game-list {
 .recent-achievements {
 	display: inline-block;
 	margin: 0 16px 0 0;
+}
+
+.ellipsis {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }

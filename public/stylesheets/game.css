@@ -1,0 +1,114 @@
+
+@media (max-width: 685px)
+{
+	.section-title > small {
+		display: none;
+	}
+}
+
+.game-title {
+	margin: 0;
+}
+.game-icon {
+	box-shadow: 0 8px 17px 2px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12), 0 5px 5px -3px rgba(0,0,0,0.2);
+	border: 1px solid black;
+}
+
+.progress-bar {
+	height: 16px;
+	padding: 1px;
+	min-width: 90%;
+	max-width: 200px;
+	background-color: black;
+	border: 1px solid lightgray;
+	border-radius: 2px;
+	display: inline-block;
+}
+
+.progress-bar > span {
+	background-color: gray;
+	height: 12px;
+	display: block;
+}
+
+.no-wrap {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.progress-bar.perfect {
+	border-color: white;
+	box-shadow: 0px 0px 8px 0px gold;
+	margin-bottom: 4px;
+}
+
+.progress-bar.perfect > span {
+	background-color: gold;
+}
+
+
+
+.achievement-list > div {
+	display: flex;
+	flex-direction: row;
+	margin-bottom: 5px;
+}
+
+.achievement-list .icon {
+	margin-right: 10px;
+	flex: 0 0 0;
+}
+
+.achievement-list .global-percentage {
+	position: relative;
+	border: 1px solid #455a64;
+	flex: 1 0 0;
+	/* FIXME - shouldn't need to force the height - doesn't allow text to wrap */
+	height: 64px;
+	overflow: hidden;
+}
+
+.achievement-list .global-percentage .description {
+	color: #90a4ae;
+	padding: 0 1rem;
+}
+
+.achievement-list .global-percentage .description h5 {
+	margin: 0.7rem 0 0;
+}
+
+.achievement-list .global-percentage .description p {
+	margin: 0;
+}
+
+.achievement-list .global-percentage .percentage-bar {
+	position: absolute;
+	top: 0px;
+	bottom: 0px;
+	margin: 2px;
+	background-color: #455a64;
+	z-index: -1;
+}
+
+.achievement-list .global-percentage .percentage {
+	float: right;
+	margin-top: 0.7rem;
+	margin-right: 10px;
+}
+
+
+.game-achievement-list {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+.game-achievement-list div {
+	display: flex;
+	flex-wrap: nowrap;
+}
+
+.game-achievement-list .achievements {
+	margin: 4px 8px 0px 8px;
+}

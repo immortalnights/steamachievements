@@ -5,6 +5,7 @@ define(function(require) {
 	const template = require('tpl!player/templates/recentactivity.html');
 	const gameTemplate = require('tpl!player/templates/game.html');
 	const achievementTemplate = require('tpl!player/templates/achievement.html');
+	const recentAchievementsTemplate = require('tpl!player/templates/recentachievements.html');
 
 	return Marionette.View.extend({
 		template: template,
@@ -34,6 +35,7 @@ define(function(require) {
 
 			const playerId = this.model.id;
 			this.showChildView('recentGamesLocation', new Marionette.NextCollectionView({
+				className: '',
 				collection: recentGames,
 				childView: Marionette.View.extend({
 					serializeData: function()
@@ -51,23 +53,41 @@ define(function(require) {
 				}
 			}));
 
-			this.showChildView('recentAchievementsLocation', new Marionette.NextCollectionView({
-				collection: recentAchievements,
-				childView: Marionette.View.extend({
-					serializeData: function()
-					{
-						const data = Marionette.View.prototype.serializeData.call(this);
+			const V = Marionette.View.extend({
+				className: 'flex-container flex-wrap',
+				template: recentAchievementsTemplate,
 
-						data.playerId = playerId;
+				serializeData: function()
+				{
+					const data = Marionette.View.prototype.serializeData.call(this);
 
-						return data;
-					}
-				}),
-				childViewOptions: {
-					className: 'recent-achievements',
-					template : achievementTemplate
+					data.playerId = playerId;
+
+					return data;
 				}
+			});
+
+			this.showChildView('recentAchievementsLocation', new V({
+				collection: recentAchievements
 			}));
+			// this.showChildView('recentAchievementsLocation', new Marionette.NextCollectionView({
+			// 	className: 'flex-container',
+			// 	collection: recentAchievements,
+			// 	childView: Marionette.View.extend({
+			// 		serializeData: function()
+			// 		{
+			// 			const data = Marionette.View.prototype.serializeData.call(this);
+
+			// 			data.playerId = playerId;
+
+			// 			return data;
+			// 		}
+			// 	}),
+			// 	childViewOptions: {
+			// 		className: 'recent-achievements',
+			// 		template : achievementTemplate
+			// 	}
+			// }));
 		}
 	});
 });

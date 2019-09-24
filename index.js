@@ -2,7 +2,7 @@
 
 const debug = require('debug')('service');
 const subprocess = require('child_process')
-const Service = require('./service2');
+const Service = require('./service');
 const config = require('./config.json');
 const core = require('./lib/core');
 

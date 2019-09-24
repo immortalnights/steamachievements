@@ -3,288 +3,344 @@
 const debug = require('debug')('service');
 const _ = require('underscore');
 const moment = require('moment');
-const Queue = require('queue');
+const Queue = require('better-queue');
 const Player = require('./lib/player');
 const Game = require('./lib/game');
+const database = require('./lib/databaseconnection');
 
-//
+// check every hour
 const SCHEDULE = 60 * 60 * 1000;
 
-const resynchronizePlayerFactory = function(playerId, database, steam) {
-	return function() {
-		return new Promise(function(resolve, reject) {
-			const player = new Player(playerId, database, steam);
-
-			player.update()
-			.then(function() {
-				console.log("Completed resynchronization of", playerId)
-				resolve(playerId);
-			})
-			.catch(function(err) {
-				console.error("Failed to resynchronize player", playerId);
-				console.error(err);
-				reject(err);
-			});
-		});
-	}
-};
-
-const canResynchronize = function(doc) {
-	let result = false;
-
-	if (_.isObject(doc))
-	{
-		if (!doc.resynchronized || doc.resynchronized === 'never' || doc.resynchronized === 'pending')
-		{
-			result = true;
-			console.log("player", doc._id, "has never been resynchronized");
-		}
-		else
-		{
-			const twoHoursAgo = moment().add(-2, 'hours');
-			const lastResynchronized = moment(doc.resynchronized);
-
-			result = (doc.state === 'ok' && lastResynchronized < twoHoursAgo);
-			console.log("player", doc._id, "last resynchronized", String(lastResynchronized), "(", String(twoHoursAgo), ")", result);
-
-			result = true;
-		}
-	}
-
-	return result;
-}
-
 module.exports = class Service {
-	constructor(db, steam)
+	constructor()
 	{
-		this.db = db;
-		this.steam = steam;
+		this.queue = new Queue(async function(task, cb) {
+			debug("Processing task '%s'", task.id);
+			const result = await task.fn(...task.args);
 
-		this.triggerQueue = new Queue({
-			concurrency: 1
+			// If an error is returned, fail the task, otherwise it's successful
+			cb(result instanceof Error ? result : null, result);
+		}, {
+			filter: (task, cb) => {
+				debug("Filter '%s'", task.id);
+				cb(null, task);
+			},
+			precondition: (cb) => {
+				cb(null, true);
+			},
+			// must be one for process fn
+			batchSize: 1,
+			concurrent: 3
 		});
 
-		this.triggerQueue.on('success', (result, job) => {
-			if (this.triggeredResynchronizations[result])
-			{
-				console.log("Individual resynchronization completed", result);
-				delete this.triggeredResynchronizations[result];
-			}
+		// this.queue.on('task_queued', function() {
+		// 	debug("Queue event 'task_queued' %o", arguments);
+		// });
+		// this.queue.on('task_accepted', function() {
+		// 	debug("Queue event 'task_accepted' %o", arguments);
+		// });
+		// this.queue.on('task_started', function() {
+		// 	debug("Queue event 'task_started' %o", arguments);
+		// });
+		this.queue.on('task_finish', function() {
+			debug("Queue event 'task_finish' %o", arguments);
 		});
+		this.queue.on('task_failed', function() {
+			debug("Queue event 'task_failed' %o", arguments);
+		});
+		// this.queue.on('task_progress', function() {
+		// 	debug("Queue event 'task_progress' %o", arguments);
+		// });
+		// this.queue.on('batch_finish', function() {
+		// 	debug("Queue event 'batch_finish' %o", arguments);
+		// });
+		// this.queue.on('batch_failed', function() {
+		// 	debug("Queue event 'batch_failed' %o", arguments);
+		// });
+		// this.queue.on('batch_progress', function() {
+		// 	debug("Queue event 'batch_progress' %o", arguments);
+		// });
 
-		this.triggeredResynchronizations = {};
+		this.timeout = null;
 	}
 
 	run()
 	{
-		const scheduleTask = () => {
-			console.log("Executing schedule task");
+		const scheduleTask = async () => {
+			console.log("%s Executing schedule task", moment().toISOString());
 
 			try
 			{
-				this.resynchronizePlayers();
-				this.resynchronizeGames();
+				await this.resynchronizePlayers();
+				await this.resynchronizeGames();
+				// queued during game resynchronization
+				// await this.resynchronizePlayersAchievements();
 			}
 			catch (err)
 			{
-				console.error("Failed to execute schedule tasks", err);
+				console.error("%s Failed to execute schedule tasks", moment().toISOString(), err);
 			}
 
-			setTimeout(scheduleTask, SCHEDULE);
+			// setTimeout(scheduleTask, SCHEDULE);
 		};
 
 		scheduleTask();
 	}
 
-	// identifies players which require updating, queues the resynchronizations and starts the queue
-	// @private
-	resynchronizePlayers()
+	queueResynchronizeNewPlayer(id)
 	{
-		return new Promise((resolve, reject) => {
-			let queue = new Queue({
-				concurrency: 3
-			});
+		const resync = async function(id) {
+			try
+			{
+				const result = await this.resynchronizePlayer(id);
 
-			const yesterday = moment().add(-1, 'days');
-			this.db.getPlayers({ 'steam.communityvisibilitystate': 3, resynchronized: { "$lt": yesterday.toDate() }})
-			.then((documents) => {
-				console.log("found %i player(s) which requires updating", documents.length);
+				// get all the games the player has played and queue the resynchronization of those too
+				const games = await database.instance.getPlayerGames(id, '_id');
 
-				documents.forEach((doc, index) => {
-					queue.push(resynchronizePlayerFactory(doc._id, this.db, this.steam));
+				debug("Player has %i games requiring resynchronization", games.length);
+
+				games.forEach((game) => {
+					this.queueResynchronizeGame(game._id);
+					this.queueResynchronizePlayerAchievements(id, game._id);
 				});
+			}
+			catch (err)
+			{
+				console.error("Failed to resynchronize new player '%s'", id);
+				console.error(err);
+			}
+		};
 
-				// start the queue, resolve the promise once completed
-				// console.log("start processing queue", queue.length);
-
-				// Individual resynchronizations will delay the queue completion
-				queue.once('end', function(err) {
-					console.log("Player queue completed");
-					resolve();
-				});
-
-				// passing a callback to start will cause the queue to stop on error
-				// If this doesn't appear to do anything, be sure to enable debug logging
-				queue.start();
-			})
-			.catch(function(err) {
-				console.error("Failed to resynchronize players", err);
-				reject(err);
-			});
+		debug("Queue new player resynchronization");
+		return this.queue.push({
+			id: 'resynchronize_new_player_' + id,
+			args: [id],
+			fn: resync.bind(this)
 		});
 	}
 
-	// resynchronize a single player, starts processing the queue immediately
-	resynchronizePlayer(playerId, force)
+	queueResynchronizePlayer(playerId)
 	{
-		const resynchronizePlayerFactory2 = function(id, db, steam) {
-			return () => {
-				return new Promise((resolve, reject) => {
-					// verify the player can be resynchronized again as they may have already been resynchronized
-					// earlier in the queue.
-					this.checkPlayer(id)
-					.then(() => {
-						// exec factory to get task promise
-						return resynchronizePlayerFactory(id, db, steam)()
-						.then(() => {
-							this.resynchronizeGames();
-						});
-					})
-					.then(function() { resolve(id); })
-					.catch(function(err) {
-						console.log("Failed to begin player resyncrhonization", id);
-						console.error(err);
-						reject(err);
-					});
-				});
+		const resync = async function(id) {
+			try
+			{
+				await this.resynchronizePlayer(id);
+				await this.resynchronizePlayersAchievements();
+			}
+			catch (err)
+			{
+				console.error("Failed to resynchronize player '%s'", id);
+				console.error(err);
 			}
 		}
 
-		// if force, remove the player from the pending resynchronizations
-		if (force === true)
-		{
-			delete this.triggeredResynchronizations[playerId];
-		}
-
-		if (this.triggeredResynchronizations[playerId])
-		{
-			console.log("Resynchronization for '%s' is already in progress", playerId);
-		}
-		else
-		{
-			this.checkPlayer(playerId)
-			.then(() => {
-				// make the player as being resynchronized
-				this.triggeredResynchronizations[playerId] = true;
-
-				this.triggerQueue.push(resynchronizePlayerFactory2.call(this, playerId, this.db, this.steam));
-
-				// start the queue, (no effect if already running)
-				// console.log("Start processing queue");
-				this.triggerQueue.start();
-			})
-			.catch((err) => {
-				console.error("Failed to resynchronize player", playerId, err);
-			});
-		}
+		return this.queue.push({
+			id: 'resynchronize_player_' + playerId,
+			args: [playerId],
+			fn: resync.bind(this)
+		});
 	}
 
-	checkPlayer(playerId)
+	queueResynchronizeGame(gameId, playerId)
 	{
-		return new Promise((resolve, reject) => {
-			this.db.getPlayers({ _id: playerId })
-			.then(function(documents) {
-				if (documents.length !== 1)
+		const resync = async function(gId, pId) {
+			try
+			{
+				await this.resynchronizeGame(gId);
+
+				if (pId)
 				{
-					reject(new Error("Player '" + playerId + "' does not exist"));
+					await queueResynchronizePlayerAchievements(pId, gId);
 				}
-				else if (!canResynchronize(documents[0]))
-				{
-					reject(new Error("Cannot resynchronize player '" + playerId + "' right now"));
-				}
-				else
-				{
-					resolve();
-				}
+			}
+			catch (err)
+			{
+				console.error("Failed to resynchronize game '%i'", id);
+				console.error(err);
+			}
+		};
+
+		return this.queue.push({
+			id: 'resynchronize_game_' + gameId,
+			args: [gameId, playerId],
+			fn: resync.bind(this)
+		});
+	}
+
+	queueResynchronizePlayerAchievements(playerId, gameId)
+	{
+		return this.queue.push({
+			id: 'resynchronize_player_' + playerId + '_game_' + gameId,
+			args: [playerId, gameId],
+			fn: this.resynchronizePlayerAchievements.bind(this)
+		});
+	}
+
+	resynchronizePlayers()
+	{
+		const yesterday = moment().add(-1, 'days');
+
+		return database.instance.getPlayers({
+			'steam.communityvisibilitystate': 3,
+				$or: [{
+				resynchronized: 'never'
+			}, {
+				resynchronized: { "$lt": yesterday.toDate() }
+			}]
+		})
+		.then((documents) => {
+			debug("Found %i player(s) which requires resynchronization", documents.length);
+
+			documents.forEach((doc) => {
+				// debug(doc);
+				this.queue.push({
+					id: 'resynchronize_player_' + doc._id,
+					args: [doc._id],
+					fn: this.resynchronizePlayer.bind(this)
+				});
 			});
 		});
 	}
 
-	resynchronizeGame(id)
-	{
-
-	}
-
-	// fetch schema for recently registered games or games flagged as requiring an update
-	// resynchronize global achievements for a game if it has not been updated in a week or has been flagged
 	resynchronizeGames()
 	{
-		const resynchronizeGameFactory = function(id, db, steam) {
-			return function() {
-				return new Promise(function(resolve, reject) {
-					try
-					{
-						const game = new Game(id, db, steam);
+		const variant = Math.floor(Math.random() * Math.floor(14)) - 7;
+		const dueDate = moment().subtract(28 + variant, 'days').add();
+		const query = {
+			$or: [{
+				resynchronize: true
+			}, {
+				resynchronized: 'never'
+			}, {
+				resynchronized: { '$lt': dueDate.toDate() }
+			}]
+		};
 
-						game.update()
-						.then(function(game) {
-							// Note game name within the Schema is unreliable
-							console.log("Completed resynchronization of '%s' (%i)", game.name, game.id)
-							resolve(id);
-						})
-						.catch(function(err) {
-							console.error("Failed to resynchronize game", id);
-							console.error(err);
-							reject(err);
-						});
-					}
-					catch (err)
-					{
-						console.log("err", err)
-						reject(err);
-					}
+		return database.instance.getGames(query)
+		.then((documents) => {
+			debug("Found %i game(s) which requires resynchronization", documents.length);
+
+			documents.forEach((doc) => {
+				// debug(doc);
+				this.queue.push({
+					id: 'resynchronize_game_' + doc._id,
+					args: [doc._id],
+					fn: this.resynchronizeGame.bind(this)
 				});
-			};
-		}
-
-		return new Promise((resolve, reject) => {
-			const queue = new Queue({
-				concurrency: 3
-			});
-
-			const weekAgo = moment().add(-7, 'days');
-			const query = {
-				$or: [{
-					resynchronized: 'never'
-				}, {
-					resynchronized: { "$lt": weekAgo.toDate() }
-				}]
-			};
-
-			this.db.getGames(query)
-			.then((documents) => {
-				console.log("Found %i game(s) which requires updating", documents.length);
-
-				documents.forEach((doc, index) => {
-					queue.push(resynchronizeGameFactory(doc._id, this.db, this.steam));
-				});
-
-				queue.once('end', function(err) {
-					console.log("Game queue completed");
-					resolve();
-				});
-
-				queue.on('error', function(err, task) {
-					console.error("Game resynchronization failed", err);
-				});
-
-				// console.log("start processing game queue", queue.length);
-				queue.start();
-			})
-			.catch(function(err) {
-				console.error("Failed to resynchronize games", err);
-				reject(err);
 			});
 		});
 	}
-}
+
+	// resynchronize all players game achievements for games which have been updated
+	resynchronizePlayersAchievements()
+	{
+		return database.instance.getGames({
+			'owners.resynchronize': true
+		}, {
+			fields: {
+				_id: 1,
+				name: 1,
+				'owners': 1
+			}
+		})
+		.then((documents) => {
+			debug("Found %i owned games which require resynchronization", documents.length);
+
+			// filter owners which have been resynchronized, could use db aggregation
+			// but this only filters out games which will is already included
+			documents.forEach(function(doc) {
+				doc.owners = doc.owners.filter(function(owner) {
+					return owner.resynchronize === true;
+				});
+			});
+
+			documents.forEach((doc) => {
+				doc.owners.forEach((owner) => {
+					this.queueResynchronizePlayerAchievements(owner.playerId, doc._id);
+				});
+			});
+		});
+	}
+
+	// private
+	async resynchronizePlayer(id)
+	{
+		debug("Resynchronize player '%s'", id);
+
+		try
+		{
+			const player = new Player(id);
+
+			await player.load();
+
+			if (player.canResynchronize())
+			{
+				await player.resynchronize();
+			}
+			else
+			{
+				console.log("Cannot resynchronize player '%s'", player.id);
+			}
+		}
+		catch (err)
+		{
+			console.error("Failed to resynchronize player", id);
+			console.error(err);
+		}
+	}
+
+	// private
+	async resynchronizeGame(id)
+	{
+		debug("Resynchronize game '%s'", id);
+
+		try
+		{
+			const game = new Game(id);
+
+			let result = await game.load();
+
+			if (result && game.canResynchronize())
+			{
+				await game.resynchronize();
+
+				// reload to ensure latest data
+				await game.load();
+
+				game.attr.owners.forEach((owner) => {
+					if (owner.resynchronize)
+					{
+						this.queueResynchronizePlayerAchievements(owner.playerId, game.id);
+					}
+				});
+			}
+		}
+		catch (err)
+		{
+			console.error("Failed to resynchronize game", id);
+			console.error(err);
+		}
+	}
+
+	// resynchronize a single players game achievements
+	async resynchronizePlayerAchievements(id, appid)
+	{
+		debug("Resynchronize player '%s' game '%s' achievements", id, appid);
+
+		try
+		{
+			const player = new Player(id);
+
+			await player.load();
+
+			await player.updatePlayerAchievementsForGame(appid);
+		}
+		catch (err)
+		{
+			console.error("Failed to resynchronize player '%s' game '%s' achievements", id, appid);
+			console.error(err);
+		}
+
+		return Promise.resolve(1);
+	}
+};

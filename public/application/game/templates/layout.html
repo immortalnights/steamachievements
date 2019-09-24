@@ -1,82 +1,12 @@
-<style type="text/css">
-	.flex-container {
-		display: flex;
-	}
-
-	.flex-container.space-between {
-		justify-content: space-between;
-	}
-
-	.flex-container.space-evenly {
-		justify-content: space-evenly;
-	}
-
-	.flex-container .flex-grow {
-		flex-grow: 1;
-		justify-content: space-around;
-	}
-
-	.flex-wrap {
-		flex-wrap: wrap;
-	}
-
-	.flex-wrapr {
-		flex-wrap: wrap-reverse;
-	}
-
-	.game-title {
-		margin: 0;
-	}
-	.game-icon {
-		box-shadow: 0 8px 17px 2px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12), 0 5px 5px -3px rgba(0,0,0,0.2);
-		border: 1px solid black;
-	}
-
-	.progress-bar {
-		height: 16px;
-		padding: 1px;
-		min-width: 90%;
-		max-width: 200px;
-		background-color: black;
-		border: 1px solid lightgray;
-		border-radius: 2px;
-		display: inline-block;
-	}
-
-	.progress-bar > span {
-		background-color: gray;
-		height: 12px;
-		display: block;
-	}
-
-	.no-wrap {
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.progress-bar.perfect {
-		border-color: white;
-		box-shadow: 0px 0px 8px 0px gold;
-		margin-bottom: 4px;
-	}
-
-	.progress-bar.perfect > span {
-		background-color: gold;
-	}
-</style>
-
-
-
 <div class="flex-container space-between flex-wrapr">
 	<div class="flex-grow">
 		<h5 class="game-title">
 			<a href="#/game/<%- _id %>"><%- name %></a> <a href="http://store.steampowered.com/app/<%- _id %>" target="_black"><i class="material-icons green-text">link</i></a>
 		</h5>
-		<div class="flex-container space-evenly flex-wrap">
-			<div class="no-wrap">
-				<% if (obj.owner) { %>
-					<%- tr("Added __d__", { d: moment(obj.owner).calendar() }) %>
+		<div class="flex-container <%- (obj.owner) ? 'space-evenly' : 'space-between' %> flex-wrap">
+			<% if (obj.owner) { %>
+				<div class="no-wrap">
+					<%- tr("Added __d__", { d: moment(owner.added).calendar() }) %>
 					</br>
 					<%
 						function formatPlaytime(t) { return (t < 60) ? (t + ' minutes') : (Math.floor(t / 60) + ' hours') }
@@ -88,8 +18,8 @@
 					<% } else { %>
 						<%- tr("Playtime __t__ total", { t: formatPlaytime(owner.playtime_forever) }) %>
 					<% } %>
-				<% } %>
-			</div>
+				</div>
+			<% } %>
 
 			<% if (_.isEmpty(achievements))
 			{
@@ -121,7 +51,7 @@
 		</div>
 	</div>
 
-	<div class="right-align">
+	<div>
 		<a href="#/game/<%- _id %>">
 			<img class="game-icon" alt="<%- name %>" src="http://media.steampowered.com/steamcommunity/public/images/apps/<%- obj.appid || obj._id %>/<%- img_logo_url %>.jpg"/>
 		</a>

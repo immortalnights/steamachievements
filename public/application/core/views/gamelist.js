@@ -59,6 +59,7 @@ define(function(require) {
 	});
 
 	return List.extend({
+		tagName: 'div',
 		className: 'game-list',
 		childView: Marionette.View.extend({
 			serializeData: function()
@@ -71,6 +72,7 @@ define(function(require) {
 			}
 		}),
 		childViewOptions: _.defaults({
+			tagName: 'div',
 			template: gameTemplate
 		}, List.prototype.childViewOptions),
 
