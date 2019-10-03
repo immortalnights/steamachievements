@@ -115,13 +115,14 @@ define(function(require) {
 
 		onResychronize: function()
 		{
+			let data;
 			const playerId = this.getOption('playerId');
 			if (playerId)
 			{
 				data = { playerId: playerId };
 			}
 
-			this.model.resynchronize();
+			this.model.resynchronize({ data: data });
 		}
 	});
 });

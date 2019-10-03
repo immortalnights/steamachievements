@@ -30,7 +30,8 @@ module.exports = class Service {
 			},
 			// must be one for process fn
 			batchSize: 1,
-			concurrent: 3
+			concurrent: 3,
+			afterProcessDelay: 10,
 		});
 
 		// this.queue.on('task_queued', function() {
@@ -39,9 +40,9 @@ module.exports = class Service {
 		// this.queue.on('task_accepted', function() {
 		// 	debug("Queue event 'task_accepted' %o", arguments);
 		// });
-		// this.queue.on('task_started', function() {
-		// 	debug("Queue event 'task_started' %o", arguments);
-		// });
+		this.queue.on('task_started', function() {
+			debug("Queue event 'task_started' %o", arguments);
+		});
 		this.queue.on('task_finish', function() {
 			debug("Queue event 'task_finish' %o", arguments);
 		});

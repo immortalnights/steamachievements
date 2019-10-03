@@ -44,6 +44,7 @@ core.start(config)
 	app.use(express.static('public', {
 		maxAge: '1d'
 	}));
+
 	app.use('/node_modules', express.static('node_modules', {
 		maxAge: '1d'
 	}));
