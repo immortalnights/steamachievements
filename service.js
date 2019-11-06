@@ -14,6 +14,7 @@ const SCHEDULE = 60 * 60 * 1000;
 module.exports = class Service {
 	constructor()
 	{
+		this.timer = null;
 		this.queue = new Queue(async function(task, cb) {
 			debug("Processing task '%s'", task.id);
 			const result = await task.fn(...task.args);
@@ -65,7 +66,7 @@ module.exports = class Service {
 		this.timeout = null;
 	}
 
-	run()
+	start()
 	{
 		const scheduleTask = async () => {
 			console.log("%s Executing schedule task", moment().toISOString());
@@ -82,10 +83,15 @@ module.exports = class Service {
 				console.error("%s Failed to execute schedule tasks", moment().toISOString(), err);
 			}
 
-			// setTimeout(scheduleTask, SCHEDULE);
+			this.timer = setTimeout(scheduleTask, SCHEDULE);
 		};
 
 		scheduleTask();
+	}
+
+	stop()
+	{
+		clearTimeout(this.timer);
 	}
 
 	queueResynchronizeNewPlayer(id)

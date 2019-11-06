@@ -13,11 +13,16 @@ process.on('unhandledRejection', function(reason, p) {
 core.start(config)
 .then(function() {
 	console.log("Startup successful");
+	debug("Service debug enabled");
 
 	// fork the web server (API and UI)
 	const web = subprocess.fork('./web.js');
 	// initalize the service
 	const service = new Service();
+
+	web.on('exit', (code) => {
+		console.log(`Web child has exited ${code}`);
+	});
 
 	web.on('message', (message) => {
 		debug("received message from `web`", message);
@@ -49,8 +54,22 @@ core.start(config)
 		}
 	});
 
+	process.on('SIGINT', () => {
+		service.stop();
+		web.kill();
+		core.stop();
+		console.log("SIGINT (main)");
+	});
+
+	process.on('SIGTERM', () => {
+		service.stop();
+		web.kill();
+		core.stop();
+		console.log("SIGTERM (main)");
+	});
+
 	// start the service
-	service.run();
+	service.start();
 })
 .catch(function(err) {
 	console.error("Failed to connect to databse or Steam");

@@ -17,8 +17,13 @@ core.start(config)
 .then(function(result) {
 	const app = express();
 
-	app.on('error', function(e) {
-		console.error("Express error:", e);
+	process.on('SIGINT', () => {
+		core.stop();
+		console.log("SIGINT (web)");
+	});
+	process.on('SIGTERM', () => {
+		core.stop();
+		console.log("SIGTERM (web)");
 	});
 
 	// JSON middleware
@@ -57,7 +62,11 @@ core.start(config)
 	{
 		const port = config.HTTPPort || 8080;
 		console.log("Starting express server on", port);
-		app.listen(port, () => console.log("Listening on port", port));
+		const serv = app.listen(port, () => console.log("Listening on port", port));
+
+		serv.on('error', function(e) {
+			console.error("Express error:", e);
+		});
 	}
 	catch (err)
 	{
