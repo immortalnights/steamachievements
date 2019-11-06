@@ -17,6 +17,10 @@ core.start(config)
 .then(function(result) {
 	const app = express();
 
+	app.on('error', function(e) {
+		console.error("Express error:", e);
+	});
+
 	// JSON middleware
 	app.use(express.json());
 
@@ -61,7 +65,7 @@ core.start(config)
 	}
 })
 .catch(function(err) {
-	console.error("Failed to connect to databse");
+	console.error("Failed to connect to database");
 	console.error(err);
 	// TODO fix db connection error not closing / exiting automatically
 	process.exit(1);
