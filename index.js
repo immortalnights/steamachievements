@@ -10,18 +10,16 @@ process.on('unhandledRejection', function(reason, p) {
 	console.log('Unhandled Rejection: Promise', p, 'reason:', reason);
 });
 
+debug("Service debug enabled");
+
 core.start(config)
 .then(function() {
-	console.log("Startup successful");
-	debug("Service debug enabled");
-
 	// fork the web server (API and UI)
 	const web = subprocess.fork('./web.js');
-	// initalize the service
-	const service = new Service();
 
 	web.on('exit', (code) => {
 		console.log(`Web child has exited ${code}`);
+		process.exit(1);
 	});
 
 	web.on('message', (message) => {
@@ -54,26 +52,13 @@ core.start(config)
 		}
 	});
 
-	process.on('SIGINT', () => {
-		service.stop();
-		web.kill();
-		core.stop();
-		console.log("SIGINT (main)");
-	});
-
-	process.on('SIGTERM', () => {
-		service.stop();
-		web.kill();
-		core.stop();
-		console.log("SIGTERM (main)");
-	});
-
-	// start the service
+	// initalize the service
+	const service = new Service();
 	service.start();
 })
 .catch(function(err) {
-	console.error("Failed to connect to databse or Steam");
+	console.error("Failed to connect to database or Steam");
 	console.error(err);
-	// TODO fix db connection error not closing / exiting automatically
 	process.exit(1);
 });
+
