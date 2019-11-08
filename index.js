@@ -1,8 +1,9 @@
 'use strict';
 
 const debug = require('debug')('service');
-const subprocess = require('child_process')
+const subprocess = require('child_process');
 const Service = require('./service');
+const Web = require('./web');
 const config = require('./config.json');
 const core = require('./lib/core');
 
@@ -15,38 +16,26 @@ debug("Service debug enabled");
 core.start(config)
 .then(function() {
 	// fork the web server (API and UI)
-	const web = subprocess.fork('./web.js');
+	const webserver = new Web(config);
 
-	web.on('exit', (code) => {
-		console.log(`Web child has exited ${code}`);
-		process.exit(1);
+	webserver.on('registered', (message) => {
+		console.log("received 'registered' event from web server", message);
+		service.queueResynchronizeNewPlayer(message.id);
 	});
 
-	web.on('message', (message) => {
-		debug("received message from `web`", message);
-
-		switch (message.action)
+	webserver.on('resynchronize', (message) => {
+		console.log("received 'resynchronize' event from web server", message);
+		
+		switch (message.resource)
 		{
-			case 'registered':
+			case 'player':
 			{
-				service.queueResynchronizeNewPlayer(message.id);
-				break;
+				service.queueResynchronizePlayer(message.id);
+				break
 			}
-			case 'resynchronize':
+			case 'game':
 			{
-				switch (message.resource)
-				{
-					case 'player':
-					{
-						service.queueResynchronizePlayer(message.id);
-						break
-					}
-					case 'game':
-					{
-						service.queueResynchronizeGame(message.id);
-						break;
-					}
-				}
+				service.queueResynchronizeGame(message.id);
 				break;
 			}
 		}

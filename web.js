@@ -1,67 +1,65 @@
 'use strict';
 
 const express = require('express');
+const http = require('http');
+const events = require('events');
 const _ = require('underscore');
-const config = require('./config.json');
-const Database = require('./lib/database');
-const Steam = require('./lib/steam');
 const playerRouterFactory = require('./lib/routers/player');
 const gameRouterFactory = require('./lib/routers/game');
-const core = require('./lib/core');
 
-process.on('unhandledRejection', (reason, p) => {
-	console.log('Unhandled Rejection: Promise', p, 'reason:', reason);
-});
+module.exports = class Web extends events.EventEmitter {
+	constructor(config)
+	{
+		super();
 
+		// setup express server
+		const app = express();
 
-core.start(config)
-.catch(function(err) {
-	console.error("Failed to connect to database or Steam");
-	console.error(err);
-	process.exit(1);
-});
+		// JSON middleware
+		app.use(express.json());
 
-// setup express server
-const app = express();
+		// Catch-all debugging
+		// app.use(function(req, res, next) {
+		// 	console.log("Catch-all route");
+		// 	next();
+		// });
 
-// JSON middleware
-app.use(express.json());
+		// API router
+		const emitter = this;
+		const router = express.Router();
+		router.use(function(req, res, next) {
+			req.notifier = emitter;
+			next();
+		});
 
-// Catch-all debugging
-// app.use(function(req, res, next) {
-// 	console.log("Catch-all route");
-// 	next();
-// });
+		// router.route('/error').get((req, res) => {
+		// 	throw new Error("T");
+		// });
 
-// API router
-const router = express.Router();
-router.use(function(req, res, next) {
-	next();
-});
+		// Apply API router
+		app.use('/api', router);
+		app.use('/api', playerRouterFactory);
+		app.use('/api', gameRouterFactory());
 
-// router.route('/error').get((req, res) => {
-// 	throw new Error("T");
-// });
+		app.use(express.static('public', {
+			maxAge: '1d'
+		}));
 
-// Apply API router
-app.use('/api', router);
-app.use('/api', playerRouterFactory());
-app.use('/api', gameRouterFactory());
+		app.use('/node_modules', express.static('node_modules', {
+			maxAge: '1d'
+		}));
 
-app.use(express.static('public', {
-	maxAge: '1d'
-}));
+		const port = config.HTTPPort || 8080;
+		console.log("Starting express server on", port);
+		const service = app.listen(port, () => console.log(`Listening on port ${port}`));
 
-app.use('/node_modules', express.static('node_modules', {
-	maxAge: '1d'
-}));
+		service.on('error', function(err) {
+			console.error(`Failed to start Express server`);
+			console.error(err);
+			process.exit(1);
+		});
 
-const port = config.HTTPPort || 8080;
-console.log("Starting express server on", port);
-const serv = app.listen(port, () => console.log(`Listening on port ${port}`));
-
-serv.on('error', function(err) {
-	console.error(`Failed to start Express server`);
-	console.error(err);
-	process.exit(1);
-});
+		this.app = app;
+		this.service = service;
+	}
+}

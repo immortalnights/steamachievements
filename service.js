@@ -118,7 +118,7 @@ module.exports = class Service {
 			}
 		};
 
-		debug("Queue new player resynchronization");
+		console.log("Queue resynchronization of new player", id);
 		return this.queue.push({
 			id: 'resynchronize_new_player_' + id,
 			args: [id],
@@ -141,6 +141,7 @@ module.exports = class Service {
 			}
 		}
 
+		console.log("Queue resynchronization of player", playerId);
 		return this.queue.push({
 			id: 'resynchronize_player_' + playerId,
 			args: [playerId],
@@ -167,6 +168,7 @@ module.exports = class Service {
 			}
 		};
 
+		console.log("Queue resynchronization of game", gameId);
 		return this.queue.push({
 			id: 'resynchronize_game_' + gameId,
 			args: [gameId, playerId],
