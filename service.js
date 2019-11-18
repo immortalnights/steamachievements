@@ -9,7 +9,7 @@ const Game = require('./lib/game');
 const database = require('./lib/databaseconnection');
 
 // check every hour
-const SCHEDULE = 60 * 60 * 1000;
+const SCHEDULE = 5 * 1000;
 
 module.exports = class Service {
 	constructor()
@@ -187,14 +187,14 @@ module.exports = class Service {
 
 	resynchronizePlayers()
 	{
-		const yesterday = moment().add(-1, 'days');
+		const delay = moment().subtract(15, 'minutes');
 
 		return database.instance.getPlayers({
 			'steam.communityvisibilitystate': 3,
 				$or: [{
 				resynchronized: 'never'
 			}, {
-				resynchronized: { "$lt": yesterday.toDate() }
+				resynchronized: { "$lt": delay.toDate() }
 			}]
 		})
 		.then((documents) => {
