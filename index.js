@@ -2,6 +2,7 @@
 
 const debug = require('debug')('service');
 const subprocess = require('child_process');
+const _ = require('underscore');
 const Service = require('./service');
 const Web = require('./web');
 const config = require('./config.json');
@@ -13,10 +14,23 @@ process.on('unhandledRejection', function(reason, p) {
 
 debug("Service debug enabled");
 
-core.start(config)
+const playerResynchronization = { minutes: 5 };
+const systemConfig = _.defaults(config, {
+	database: {},
+	timers: {
+		serviceTimer: 1 * 60 * 1000,
+		playerResynchronization: playerResynchronization,
+		playerMinResynchronizationDelay: playerResynchronization,
+		gameResynchronization: { days: 14 },
+		gameMinResynchronizationDelay: { hours: 1 },
+		cacheMaxAge: 60 // seconds
+	}
+});
+
+core.start(systemConfig)
 .then(function() {
 	// fork the web server (API and UI)
-	const webserver = new Web(config);
+	const webserver = new Web(systemConfig);
 
 	webserver.on('registered', (message) => {
 		console.log("received 'registered' event from web server", message);
@@ -42,7 +56,7 @@ core.start(config)
 	});
 
 	// initalize the service
-	const service = new Service();
+	const service = new Service(systemConfig);
 	service.start();
 })
 .catch(function(err) {

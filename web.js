@@ -1,5 +1,6 @@
 'use strict';
 
+const debug = require('debug')('web');
 const express = require('express');
 const http = require('http');
 const events = require('events');
@@ -38,8 +39,8 @@ module.exports = class Web extends events.EventEmitter {
 
 		// Apply API router
 		app.use('/api', router);
-		app.use('/api', playerRouterFactory);
-		app.use('/api', gameRouterFactory());
+		app.use('/api', playerRouterFactory(config));
+		app.use('/api', gameRouterFactory(config));
 
 		app.use(express.static('public', {
 			maxAge: '1d'
@@ -50,8 +51,8 @@ module.exports = class Web extends events.EventEmitter {
 		}));
 
 		const port = config.HTTPPort || 8080;
-		console.log("Starting express server on", port);
-		const service = app.listen(port, () => console.log(`Listening on port ${port}`));
+		debug(`Starting express server on ${port}`);
+		const service = app.listen(port, () => debug(`Listening on port ${port}`));
 
 		service.on('error', function(err) {
 			console.error(`Failed to start Express server`);

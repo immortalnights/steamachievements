@@ -8,15 +8,10 @@ const Player = require('./lib/player');
 const Game = require('./lib/game');
 const database = require('./lib/databaseconnection');
 
-const Player2 = require('./lib/player2');
-
-
-// check every hour
-const SCHEDULE = 5 * 1000;
-
 module.exports = class Service {
-	constructor()
+	constructor(config)
 	{
+		this.config = config;
 		this.timer = null;
 		this.queue = new Queue(async function(task, cb) {
 			debug("Processing task '%s'", task.id);
@@ -73,7 +68,7 @@ module.exports = class Service {
 	start()
 	{
 		const scheduleTask = async () => {
-			console.log("%s Executing schedule task", moment().toISOString());
+			debug(`${moment().toISOString()} Executing schedule task`);
 
 			try
 			{
@@ -81,10 +76,10 @@ module.exports = class Service {
 			}
 			catch (err)
 			{
-				console.error("%s Failed to execute schedule tasks", moment().toISOString(), err);
+				console.error(`${moment().toISOString()} Failed to execute schedule tasks`, err);
 			}
 
-			this.timer = setTimeout(scheduleTask, SCHEDULE);
+			this.timer = setTimeout(scheduleTask, this.config.timers.serviceTimer);
 		};
 
 		scheduleTask();
@@ -95,128 +90,9 @@ module.exports = class Service {
 		clearTimeout(this.timer);
 	}
 
-	// queueResynchronizeNewPlayer(id)
-	// {
-	// 	const resync = async function(id) {
-	// 		try
-	// 		{
-	// 			const result = await this.resynchronizePlayer(id);
-
-	// 			// get all the games the player has played and queue the resynchronization of those too
-	// 			const games = await database.instance.getPlayerGames(id, '_id');
-
-	// 			debug("Player has %i games requiring resynchronization", games.length);
-
-	// 			games.forEach((game) => {
-	// 				this.queueResynchronizeGame(game._id);
-	// 				this.queueResynchronizePlayerAchievements(id, game._id);
-	// 			});
-	// 		}
-	// 		catch (err)
-	// 		{
-	// 			console.error("Failed to resynchronize new player '%s'", id);
-	// 			console.error(err);
-	// 		}
-	// 	};
-
-	// 	console.log("Queue resynchronization of new player", id);
-	// 	return this.queue.push({
-	// 		id: 'resynchronize_new_player_' + id,
-	// 		args: [id],
-	// 		fn: resync.bind(this)
-	// 	});
-	// }
-
-	queueResynchronizePlayer(playerId)
-	{
-		console.log("Queue resynchronization of player", playerId);
-		return this.queue.push({
-			id: 'resynchronize_player_' + playerId,
-			args: [playerId],
-			fn: this.nowResynchronizePlayer.bind(this)
-		});
-	}
-
-	async nowResynchronizePlayer(id)
-	{
-		try
-		{
-			const player = new Player2(id);
-
-			if (await player.load() === false)
-			{
-				debug(`player '${id}' does not exist`);
-			}
-			else if (player.canResynchronize() === false)
-			{
-				debug(`cannot resynchronize player '${player.name}' (${player.id})`);
-			}
-			else
-			{
-				debug(`resynchronizing '${player.name}' (${player.id})`);
-
-				const games = await player.resynchronize();
-			}
-			// await this.resynchronizePlayer(id);
-			// await this.resynchronizePlayersAchievements();
-		}
-		catch (err)
-		{
-			console.error("Failed to resynchronize player '%s'", id);
-			console.error(err);
-		}
-	}
-
-	queueResynchronizeGame(gameId, playerId)
-	{
-		const resync = async function(gId, pId) {
-			try
-			{
-				await this.resynchronizeGame(gId);
-
-				if (pId)
-				{
-					await queueResynchronizePlayerAchievements(pId, gId);
-				}
-			}
-			catch (err)
-			{
-				console.error("Failed to resynchronize game '%i'", id);
-				console.error(err);
-			}
-		};
-
-		console.log("Queue resynchronization of game", gameId);
-		return this.queue.push({
-			id: 'resynchronize_game_' + gameId,
-			args: [gameId, playerId],
-			fn: resync.bind(this)
-		});
-	}
-
-	queueResynchronizePlayerAchievements(playerId, gameId)
-	{
-		return this.queue.push({
-			id: 'resynchronize_player_' + playerId + '_game_' + gameId,
-			args: [playerId, gameId],
-			fn: this.resynchronizePlayerAchievements.bind(this)
-		});
-	}
-
-	// queue resynchronization of all players last resynchronized over a minute ago (or never)
 	resynchronizePlayers()
 	{
-		const delay = moment().subtract(1, 'minutes');
-
-		return database.instance.getPlayers({
-			'steam.communityvisibilitystate': 3,
-				$or: [{
-				resynchronized: 'never'
-			}, {
-				resynchronized: { '$lt': delay.toDate() }
-			}]
-		})
-		.then((documents) => {
+		Player.check(this.config.timers.playerResynchronization).then((documents) => {
 			debug("Found %i player(s) which requires resynchronization", documents.length);
 
 			documents.forEach((doc) => {
@@ -224,7 +100,7 @@ module.exports = class Service {
 				this.queue.push({
 					id: 'resynchronize_player_' + doc._id,
 					args: [doc._id],
-					fn: this.nowResynchronizePlayer.bind(this)
+					fn: this.resynchronizePlayer.bind(this)
 				});
 			});
 		});
@@ -233,7 +109,7 @@ module.exports = class Service {
 	// queue resynchronization of all games last resynchronized over fourteen days ago
 	resynchronizeGames()
 	{
-		const dueDate = moment().subtract(14, 'days');
+		const dueDate = moment().subtract(this.config.timers.playerResynchronization);
 		const query = {
 			$or: [{
 				resynchronize: true
@@ -246,73 +122,71 @@ module.exports = class Service {
 
 		return database.instance.getGames(query)
 		.then((documents) => {
-			debug("Found %i game(s) which requires resynchronization", documents.length);
+			debug(`Found ${documents.length} game(s) which requires resynchronization`);
 
 			documents.forEach((doc) => {
-				// debug(doc);
-				this.queue.push({
-					id: 'resynchronize_game_' + doc._id,
-					args: [doc._id],
-					fn: this.resynchronizeGame.bind(this)
-				});
+				this.queueResynchronizeGame(doc._id);
 			});
 		});
 	}
 
-	// resynchronize all players game achievements for games which have been updated
-	resynchronizePlayersAchievements()
+	queueResynchronizePlayer(playerId)
 	{
-		return database.instance.getGames({
-			'owners.resynchronize': true
-		}, {
-			fields: {
-				_id: 1,
-				name: 1,
-				'owners': 1
-			}
-		})
-		.then((documents) => {
-			debug("Found %i owned games which require resynchronization", documents.length);
-
-			// filter owners which have been resynchronized, could use db aggregation
-			// but this only filters out games which will is already included
-			documents.forEach(function(doc) {
-				doc.owners = doc.owners.filter(function(owner) {
-					return owner.resynchronize === true;
-				});
-			});
-
-			documents.forEach((doc) => {
-				doc.owners.forEach((owner) => {
-					this.queueResynchronizePlayerAchievements(owner.playerId, doc._id);
-				});
-			});
+		debug("Queue resynchronization of player", playerId);
+		return this.queue.push({
+			id: 'resynchronize_player_' + playerId,
+			args: [playerId],
+			fn: this.resynchronizePlayer.bind(this)
 		});
 	}
 
-	// private
+	queueResynchronizeGame(gameId)
+	{
+		debug(`Queue resynchronization of game ${gameId}`);
+		return this.queue.push({
+			id: 'resynchronize_game_' + gameId,
+			args: [gameId],
+			fn: this.resynchronizeGame.bind(this)
+		});
+	}
+
+	queueResynchronizePlayerAchievements(playerId, gameId)
+	{
+		return this.queue.push({
+			id: 'resynchronize_player_' + playerId + '_game_' + gameId,
+			args: [playerId, gameId],
+			fn: this.resynchronizePlayerAchievements.bind(this)
+		});
+	}
+
+	// perform player resynchronization
 	async resynchronizePlayer(id)
 	{
-		debug("Resynchronize player '%s'", id);
-
 		try
 		{
-			const player = new Player(id);
+			const player = await Player.load(id);
 
-			await player.load();
-
-			if (player.canResynchronize())
+			if (player.canResynchronize(this.config.timers.playerMinResynchronizationDelay) === false)
 			{
-				await player.resynchronize();
+				console.error(`Cannot resynchronize player '${player.name}' (${player.id})`);
 			}
 			else
 			{
-				console.log("Cannot resynchronize player '%s'", player.id);
+				debug(`Resynchronizing '${player.name}' (${player.id})`);
+
+				const games = await player.resynchronize();
+
+				// queue new or played games for resynchronization
+				debug(`Queing resynchronization of ${games.length} games`);
+				games.forEach((game) => {
+					this.queueResynchronizeGame(game.appid);
+					this.queueResynchronizePlayerAchievements(id, game.appid);
+				});
 			}
 		}
 		catch (err)
 		{
-			console.error("Failed to resynchronize player", id);
+			console.error(`Failed to resynchronize player '${id}'`);
 			console.error(err);
 		}
 	}
@@ -326,46 +200,40 @@ module.exports = class Service {
 		{
 			const game = new Game(id);
 
-			let result = await game.load();
-
-			if (result && game.canResynchronize())
+			if (await game.load() === false)
+			{
+				debug(`game '${id}' does not exist`);
+			}
+			else if (game.canResynchronize(this.config.timers.playerMinResynchronizationDelay) === false)
+			{
+				debug(`cannot resynchronize game '${game.name}' (${game.id})`);
+			}
+			else
 			{
 				await game.resynchronize();
-
-				// reload to ensure latest data
-				await game.load();
-
-				game.attr.owners.forEach((owner) => {
-					if (owner.resynchronize)
-					{
-						this.queueResynchronizePlayerAchievements(owner.playerId, game.id);
-					}
-				});
 			}
 		}
 		catch (err)
 		{
-			console.error("Failed to resynchronize game", id);
+			console.error(`Failed to resynchronize game '${gId}'`);
 			console.error(err);
 		}
 	}
 
 	// resynchronize a single players game achievements
-	async resynchronizePlayerAchievements(id, appid)
+	async resynchronizePlayerAchievements(playerId, appid)
 	{
-		debug("Resynchronize player '%s' game '%s' achievements", id, appid);
+		debug("Resynchronize player '%s' game '%s' achievements", playerId, appid);
 
 		try
 		{
-			const player = new Player(id);
-
-			await player.load();
+			const player = await Player.load(playerId);
 
 			await player.updatePlayerAchievementsForGame(appid);
 		}
 		catch (err)
 		{
-			console.error("Failed to resynchronize player '%s' game '%s' achievements", id, appid);
+			console.error("Failed to resynchronize player '%s' game '%s' achievements", player.id, appid);
 			console.error(err);
 		}
 
