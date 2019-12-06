@@ -230,3 +230,9 @@ ul.game-list {
 	text-overflow: ellipsis;
 	overflow: hidden;
 }
+
+.friend-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 2px 2px 0 0;
+}

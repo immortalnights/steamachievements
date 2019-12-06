@@ -194,7 +194,7 @@ module.exports = class Service {
 	// private
 	async resynchronizeGame(id)
 	{
-		debug("Resynchronize game '%s'", id);
+		debug(`Resynchronize game '${id}'`);
 
 		try
 		{
@@ -223,7 +223,7 @@ module.exports = class Service {
 	// resynchronize a single players game achievements
 	async resynchronizePlayerAchievements(playerId, appid)
 	{
-		debug("Resynchronize player '%s' game '%s' achievements", playerId, appid);
+		debug(`resynchronize player '${playerId}' game '${appid}' achievements`);
 
 		try
 		{
