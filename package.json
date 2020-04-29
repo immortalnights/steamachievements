@@ -16,7 +16,7 @@
     "better-queue": "3.8.10",
     "debug": "2.6.9",
     "express": "4.16.2",
-    "jquery": "3.4.1",
+    "jquery": "3.5.0",
     "materialize-css": "1.0.0-alpha.4",
     "moment": "2.21.0",
     "mongodb": "^3.3.3",
