@@ -154,6 +154,11 @@ ul.game-list {
 	padding: 0;
 }
 
+.achievement-icon {
+	width: 64px;
+	height: 64px;
+}
+
 .achievement-icon.small {
 	width: 32px;
 	height: 32px;
