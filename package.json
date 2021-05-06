@@ -23,7 +23,7 @@
     "requirejs": "2.3.5",
     "requirejs-text": "2.0.15",
     "requirejs-underscore-tpl": "0.2.0",
-    "underscore": "1.8.3"
+    "underscore": "1.12.1"
   },
   "devDependencies": {
     "nodemon": "1.19.3"
